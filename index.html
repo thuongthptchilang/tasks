@@ -931,17 +931,38 @@
                                     <input id="acc-phone" type="text" placeholder="09xxxxxxxx" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-300 outline-none focus:border-blue-600" />
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Chức vụ / Nhiệm vụ</label>
-                                    <input id="acc-position" type="text" placeholder="Giáo viên Toán / GVCN 10A1" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-300 outline-none focus:border-blue-600" />
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Chức vụ / Nhiệm vụ kiêm nhiệm</label>
+                                    <input id="acc-position" type="text" placeholder="VD: Giáo viên Toán, GVCN 10A1, TV Ban UDCNTT" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-300 outline-none focus:border-blue-600" />
                                 </div>
                                 <div>
                                     <label class="block text-xs font-semibold text-slate-700 mb-1">URL Ảnh đại diện (Tùy chọn)</label>
                                     <input id="acc-avatar-url" type="url" placeholder="https://..." class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-300 outline-none focus:border-blue-600" />
                                 </div>
                             </div>
+
+                            <!-- KHU VỰC TÍCH CHỌN NHIỀU BAN / TỔ / NHÓM THAM GIA -->
+                            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-3">
+                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                    <div>
+                                        <label class="block text-xs font-extrabold text-slate-900 uppercase tracking-wide">
+                                            <i class="fa-solid fa-layer-group text-blue-700 mr-1"></i> Các Ban / Tổ chuyên môn / Nhóm công tác tham gia
+                                        </label>
+                                        <p class="text-[11px] text-slate-500 mt-0.5">
+                                            Tích chọn tất cả các Tổ chuyên môn, Nhóm GVCN, Ban UDCNTT, Đoàn TN... mà Thầy/Cô tham gia để nhận đầy đủ thông báo và công việc của từng nhóm.
+                                        </p>
+                                    </div>
+                                    <div class="shrink-0">
+                                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Đơn vị / Tổ chính:</label>
+                                        <select id="acc-primary-dept" class="px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-300 bg-white outline-none focus:border-blue-600"></select>
+                                    </div>
+                                </div>
+
+                                <div id="acc-multi-departments-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 pt-1"></div>
+                            </div>
+
                             <div class="pt-2 flex justify-end">
                                 <button type="submit" class="px-5 py-2.5 bg-blue-700 hover:bg-blue-800 text-white text-xs sm:text-sm font-bold rounded-xl shadow-xs transition">
-                                    <i class="fa-solid fa-floppy-disk mr-1.5"></i> Lưu thông tin cá nhân
+                                    <i class="fa-solid fa-floppy-disk mr-1.5"></i> Lưu thông tin & Nhóm tham gia
                                 </button>
                             </div>
                         </form>
@@ -1446,9 +1467,14 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Phòng ban / Tổ chuyên môn</label>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Đơn vị / Tổ chính</label>
                         <select id="edit-user-dept" class="w-full px-3 py-2 text-xs sm:text-sm rounded-xl border border-slate-300 bg-white outline-none"></select>
                     </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Các Ban / Tổ / Nhóm kiêm nhiệm tham gia (Tích chọn nhiều)</label>
+                    <div id="edit-user-multi-depts" class="max-h-36 overflow-y-auto p-2.5 rounded-xl border border-slate-200 bg-slate-50 grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs"></div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1607,7 +1633,7 @@
                     <div class="md:col-span-7 space-y-1">
                         <p class="text-xs font-bold text-slate-800">1. Chuẩn bị tệp dữ liệu (.xlsx, .xls, .csv)</p>
                         <p class="text-xs text-slate-600">
-                            Các cột hỗ trợ: <code>full_name</code> (Họ và tên), <code>email</code> (Email đăng nhập), <code>password</code> (Mật khẩu - mặc định <code>ChiLang@2026</code> nếu để trống), <code>phone</code> (SĐT), <code>department_code</code> (Mã tổ: <code>BGH</code>, <code>KE_TOAN</code>, <code>DOAN_TN</code>, <code>TO_THS</code>, <code>TO_LTCTQ</code>, <code>BAN_UDCNTT</code>, <code>TO_VS</code>, <code>TO_ADK</code>, <code>TO_VP</code>), <code>role</code> (<code>teacher</code>, <code>department_head</code>, <code>accountant</code>, <code>youth_union</code>, <code>admin</code>), <code>position</code> (Chức vụ).
+                            Các cột hỗ trợ: <code>full_name</code> (Họ và tên), <code>email</code> (Email đăng nhập), <code>password</code> (Mật khẩu - mặc định <code>ChiLang@2026</code> nếu để trống), <code>phone</code> (SĐT), <code>department_code</code> (Có thể ghi nhiều mã cách nhau dấu phẩy, VD: <code>TO_THS, NHOM_GVCN, BAN_UDCNTT</code>), <code>role</code> (<code>teacher</code>, <code>department_head</code>, <code>accountant</code>, <code>youth_union</code>, <code>admin</code>), <code>position</code> (Chức vụ).
                         </p>
                     </div>
                     <div class="md:col-span-5 flex flex-wrap items-center justify-end gap-2">
@@ -2169,7 +2195,7 @@
             if (isAdminOrBGH()) return true;
             if (ann.sender_id === AppState.profile.id) return true;
             if (['accountant', 'department_head', 'youth_union'].includes(getCurrentRole())) {
-                return ann.department_id && ann.department_id === AppState.profile.department_id;
+                return ann.department_id && userHasDepartment(AppState.profile, ann.department_id);
             }
             return false;
         }
@@ -2183,7 +2209,7 @@
             const p = AppState.profile;
             if (!p) return;
 
-            const deptName = getDepartmentName(p.department_id) || 'Chưa phân tổ';
+            const deptName = getUserDepartmentsDisplay(p);
             const roleLabel = ROLE_LABELS[p.role] || 'GIÁO VIÊN';
             const initials = getInitials(p.full_name);
 
@@ -2192,6 +2218,7 @@
             document.getElementById('sidebar-user-role-badge').textContent = roleLabel;
             document.getElementById('sidebar-user-role-badge').className = `px-2 py-0.5 text-[10px] font-bold uppercase rounded-md ${ROLE_BADGE_CLASSES[p.role] || ROLE_BADGE_CLASSES.teacher}`;
             document.getElementById('sidebar-user-dept').textContent = deptName;
+            document.getElementById('sidebar-user-dept').title = deptName;
 
             // Ẩn/hiện menu Quản trị cho ADMIN & BGH
             const adminSection = document.getElementById('sidebar-admin-section');
@@ -2797,17 +2824,17 @@
             const form = document.getElementById('announcement-editor-form');
             form.reset();
 
-            // Đổ danh sách phòng ban (Nếu là Tổ trưởng / Kế toán / Đoàn TN thì khóa đúng đơn vị mình)
+            // Đổ danh sách phòng ban (Nếu là Tổ trưởng / Kế toán / Đoàn TN thì cho phép chọn trong các Ban/Tổ/Nhóm mà mình tham gia)
             const deptSelect = document.getElementById('ann-form-department');
             if (isAdminOrBGH()) {
                 deptSelect.innerHTML = AppState.departments.map(d => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join('');
                 deptSelect.disabled = false;
             } else {
-                const myDeptId = AppState.profile.department_id;
+                const myDeptIds = getUserDepartmentIds(AppState.profile);
                 deptSelect.innerHTML = AppState.departments
-                    .filter(d => d.id === myDeptId)
+                    .filter(d => myDeptIds.includes(d.id))
                     .map(d => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join('');
-                deptSelect.disabled = true;
+                deptSelect.disabled = myDeptIds.length <= 1;
             }
 
             // Đổ danh mục
@@ -2882,9 +2909,7 @@
             const editId = document.getElementById('ann-form-id').value.trim();
             const title = document.getElementById('ann-form-title').value.trim();
             const content = document.getElementById('ann-form-content').value.trim();
-            const departmentId = isAdminOrBGH()
-                ? document.getElementById('ann-form-department').value
-                : AppState.profile.department_id;
+            const departmentId = document.getElementById('ann-form-department').value || AppState.profile.department_id;
             const category = document.getElementById('ann-form-category').value;
             const priority = document.getElementById('ann-form-priority').value;
             const targetType = document.getElementById('ann-form-target-type').value;
@@ -3112,7 +3137,7 @@ Hạn thực hiện: ${deadlineStr}
                 const effStatus = getEffectiveTaskStatus(task, myAssign);
 
                 if (tab === 'my' && !myAssign && task.created_by !== AppState.profile.id) return false;
-                if (tab === 'department' && task.department_id !== AppState.profile.department_id && !isAdminOrBGH()) return false;
+                if (tab === 'department' && !userHasDepartment(AppState.profile, task.department_id) && !isAdminOrBGH()) return false;
                 if (tab === 'completed' && effStatus !== 'completed') return false;
                 if (tab === 'overdue' && effStatus !== 'overdue') return false;
 
@@ -3239,24 +3264,25 @@ Hạn thực hiện: ${deadlineStr}
                 deptSelect.innerHTML = AppState.departments.map(d => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join('');
                 deptSelect.disabled = false;
             } else {
-                const myDeptId = AppState.profile.department_id;
+                const myDeptIds = getUserDepartmentIds(AppState.profile);
                 deptSelect.innerHTML = AppState.departments
-                    .filter(d => d.id === myDeptId)
+                    .filter(d => myDeptIds.includes(d.id))
                     .map(d => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join('');
-                deptSelect.disabled = true;
+                deptSelect.disabled = myDeptIds.length <= 1;
             }
 
-            // Danh sách giáo viên được phép giao việc (Tổ trưởng chỉ giao cho giáo viên trong tổ; Admin/BGH giao toàn trường)
+            // Danh sách giáo viên được phép giao việc (Tổ trưởng giao cho giáo viên thuộc các Ban/Tổ/Nhóm mình phụ trách; Admin/BGH giao toàn trường)
+            const myDeptIds = getUserDepartmentIds(AppState.profile);
             const eligibleUsers = AppState.profiles.filter(u => {
                 if (!u.is_active) return false;
                 if (isAdminOrBGH() || isAccountant() || isYouthUnion()) return true;
-                return u.department_id === AppState.profile.department_id;
+                return getUserDepartmentIds(u).some(dId => myDeptIds.includes(dId));
             });
 
             document.getElementById('task-form-assignees-list').innerHTML = eligibleUsers.map(u => `
                 <label class="flex items-center gap-2 p-1 rounded hover:bg-white cursor-pointer">
                     <input type="checkbox" name="task_assignee_user" value="${u.id}" checked class="rounded text-blue-700" />
-                    <span class="truncate">${escapeHtml(u.full_name)} <span class="text-slate-400">(${escapeHtml(getDepartmentName(u.department_id))})</span></span>
+                    <span class="truncate">${escapeHtml(u.full_name)} <span class="text-slate-400">(${escapeHtml(getUserDepartmentsDisplay(u))})</span></span>
                 </label>
             `).join('');
 
@@ -3279,9 +3305,7 @@ Hạn thực hiện: ${deadlineStr}
             if (!supabaseClient || !AppState.profile) return;
 
             const title = document.getElementById('task-form-title').value.trim();
-            const departmentId = isAdminOrBGH()
-                ? document.getElementById('task-form-department').value
-                : AppState.profile.department_id;
+            const departmentId = document.getElementById('task-form-department').value || AppState.profile.department_id;
             const priority = document.getElementById('task-form-priority').value;
             const startVal = document.getElementById('task-form-start').value;
             const deadlineVal = document.getElementById('task-form-deadline').value;
@@ -3864,9 +3888,9 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
 
             const filtered = AppState.profiles.filter(u => {
                 if (roleFilter && u.role !== roleFilter) return false;
-                if (deptFilter && u.department_id !== deptFilter) return false;
+                if (deptFilter && !userHasDepartment(u, deptFilter)) return false;
                 if (q) {
-                    const hay = `${u.full_name} ${u.email || ''} ${u.phone || ''} ${u.position || ''}`.toLowerCase();
+                    const hay = `${u.full_name} ${u.email || ''} ${u.phone || ''} ${u.position || ''} ${getUserDepartmentsDisplay(u)}`.toLowerCase();
                     if (!hay.includes(q)) return false;
                 }
                 return true;
@@ -3880,7 +3904,13 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
             tbody.innerHTML = filtered.map(u => {
                 const roleLabel = ROLE_LABELS[u.role] || 'GIÁO VIÊN';
                 const roleBadge = ROLE_BADGE_CLASSES[u.role] || ROLE_BADGE_CLASSES.teacher;
-                const deptName = getDepartmentName(u.department_id);
+                const userDeptIds = getUserDepartmentIds(u);
+                const deptPillsHtml = userDeptIds.length > 0
+                    ? userDeptIds.map(dId => {
+                        const isPrimary = dId === u.department_id;
+                        return `<span class="inline-block px-2 py-0.5 rounded-md text-[11px] font-semibold mr-1 mb-1 ${isPrimary ? 'bg-blue-50 text-blue-800 border border-blue-200' : 'bg-slate-100 text-slate-700'}">${escapeHtml(getDepartmentName(dId))}</span>`;
+                    }).join('')
+                    : '<span class="text-xs text-slate-400 italic">Chưa phân tổ</span>';
                 const isMe = u.id === AppState.user?.id;
 
                 return `
@@ -3890,8 +3920,8 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
                             <div class="text-xs text-slate-500">${escapeHtml(u.email || '')} ${u.phone ? '• ' + escapeHtml(u.phone) : ''}</div>
                         </td>
                         <td class="py-3 px-4">
-                            <div class="font-semibold text-slate-800">${escapeHtml(deptName)}</div>
-                            <div class="text-xs text-slate-500">${escapeHtml(u.position || 'Giáo viên')}</div>
+                            <div class="flex flex-wrap">${deptPillsHtml}</div>
+                            <div class="text-xs text-slate-500 mt-0.5">${escapeHtml(u.position || 'Giáo viên')}</div>
                         </td>
                         <td class="py-3 px-4">
                             <span class="px-2.5 py-1 rounded-md text-[11px] font-bold ${roleBadge}">${roleLabel}</span>
@@ -3917,6 +3947,35 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
             }).join('');
         }
 
+        function renderMultiDeptCheckboxesHTML(containerId, checkboxName, selectedIds = [], primarySelectId = null) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            const selectedSet = new Set(selectedIds.filter(Boolean));
+
+            container.innerHTML = AppState.departments.map(d => {
+                const checked = selectedSet.has(d.id) ? 'checked' : '';
+                return `
+                    <label class="flex items-center gap-2 p-2 rounded-xl border border-slate-200 bg-white hover:border-blue-400 cursor-pointer transition">
+                        <input type="checkbox" name="${checkboxName}" value="${d.id}" ${checked} onchange="syncPrimaryDeptWithCheckboxes('${checkboxName}', '${primarySelectId || ''}')" class="w-4 h-4 rounded text-blue-700 focus:ring-0" />
+                        <div class="min-w-0">
+                            <div class="text-xs font-bold text-slate-800 truncate">${escapeHtml(d.name)}</div>
+                            <div class="text-[10px] text-slate-400 font-mono">${escapeHtml(d.code)}</div>
+                        </div>
+                    </label>
+                `;
+            }).join('');
+        }
+
+        function syncPrimaryDeptWithCheckboxes(checkboxName, primarySelectId) {
+            if (!primarySelectId) return;
+            const primarySelect = document.getElementById(primarySelectId);
+            if (!primarySelect) return;
+            const checkedIds = Array.from(document.querySelectorAll(`input[name="${checkboxName}"]:checked`)).map(cb => cb.value);
+            if (checkedIds.length > 0 && !checkedIds.includes(primarySelect.value)) {
+                primarySelect.value = checkedIds[0];
+            }
+        }
+
         function openCreateUserModal() {
             if (!isAdminOrBGH()) return;
             document.getElementById('user-admin-form').reset();
@@ -3927,9 +3986,10 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
             document.getElementById('edit-user-password').required = true;
 
             const deptSelect = document.getElementById('edit-user-dept');
-            deptSelect.innerHTML = '<option value="">-- Chọn phòng ban / tổ --</option>' +
+            deptSelect.innerHTML = '<option value="">-- Chọn đơn vị / tổ chính --</option>' +
                 AppState.departments.map(d => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join('');
 
+            renderMultiDeptCheckboxesHTML('edit-user-multi-depts', 'admin_user_depts', [], 'edit-user-dept');
             openModal('modal-user-editor');
         }
 
@@ -3946,16 +4006,18 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
             document.getElementById('edit-user-password').required = false;
 
             const deptSelect = document.getElementById('edit-user-dept');
-            deptSelect.innerHTML = '<option value="">-- Chưa phân đơn vị --</option>' +
+            deptSelect.innerHTML = '<option value="">-- Chưa phân đơn vị chính --</option>' +
                 AppState.departments.map(d => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join('');
 
+            const userDeptIds = getUserDepartmentIds(user);
             document.getElementById('edit-user-fullname').value = user.full_name || '';
             document.getElementById('edit-user-role').value = user.role || 'teacher';
-            deptSelect.value = user.department_id || '';
+            deptSelect.value = user.department_id || userDeptIds[0] || '';
             document.getElementById('edit-user-position').value = user.position || '';
             document.getElementById('edit-user-phone').value = user.phone || '';
             document.getElementById('edit-user-active').checked = user.is_active !== false;
 
+            renderMultiDeptCheckboxesHTML('edit-user-multi-depts', 'admin_user_depts', userDeptIds, 'edit-user-dept');
             openModal('modal-user-editor');
         }
 
@@ -3966,7 +4028,16 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
             const editId = document.getElementById('edit-user-id').value.trim();
             const fullName = document.getElementById('edit-user-fullname').value.trim();
             const role = document.getElementById('edit-user-role').value;
-            const departmentId = document.getElementById('edit-user-dept').value || null;
+            let departmentId = document.getElementById('edit-user-dept').value || null;
+            const checkedDeptIds = Array.from(document.querySelectorAll('input[name="admin_user_depts"]:checked')).map(cb => cb.value);
+
+            const deptSet = new Set(checkedDeptIds);
+            if (departmentId) deptSet.add(departmentId);
+            const finalDepartmentIds = [...deptSet];
+            if (!departmentId && finalDepartmentIds.length > 0) {
+                departmentId = finalDepartmentIds[0];
+            }
+
             const position = document.getElementById('edit-user-position').value.trim();
             const phone = document.getElementById('edit-user-phone').value.trim();
             const isActive = document.getElementById('edit-user-active').checked;
@@ -3980,15 +4051,15 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
                             full_name: fullName,
                             role,
                             department_id: departmentId,
+                            department_ids: finalDepartmentIds,
                             position,
                             phone,
                             is_active: isActive
                         })
                         .eq('id', editId);
                     if (error) throw error;
-                    showToast('Đã cập nhật thông tin và phân quyền người dùng!', 'success');
+                    showToast('Đã cập nhật thông tin, vai trò và các Ban/Tổ/Nhóm tham gia!', 'success');
                 } else {
-                    // Tạo tài khoản Auth mới bằng client phụ không lưu session để KHÔNG ghi đè phiên đăng nhập của Admin hiện tại
                     const email = document.getElementById('edit-user-email').value.trim();
                     const password = document.getElementById('edit-user-password').value;
                     const { url, key } = getEffectiveSupabaseConfig();
@@ -4018,7 +4089,6 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
                     const newUserId = signUpData?.user?.id;
                     if (!newUserId) throw new Error('Không nhận được ID người dùng mới từ Supabase Auth.');
 
-                    // Dùng phiên Admin hiện tại để cập nhật role và department_id trên bảng profiles (qua RLS Admin)
                     const { error: upProfErr } = await supabaseClient
                         .from('profiles')
                         .upsert({
@@ -4028,6 +4098,7 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
                             phone,
                             role,
                             department_id: departmentId,
+                            department_ids: finalDepartmentIds,
                             position: position || 'Giáo viên',
                             is_active: isActive
                         });
@@ -4157,12 +4228,22 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
             document.getElementById('account-display-name').textContent = p.full_name;
             document.getElementById('account-display-email').textContent = p.email || AppState.user?.email || '';
             document.getElementById('account-display-role').textContent = ROLE_LABELS[p.role] || 'GIÁO VIÊN';
-            document.getElementById('account-display-dept').textContent = getDepartmentName(p.department_id);
+            document.getElementById('account-display-dept').textContent = getUserDepartmentsDisplay(p);
 
             document.getElementById('acc-full-name').value = p.full_name || '';
             document.getElementById('acc-phone').value = p.phone || '';
             document.getElementById('acc-position').value = p.position || '';
             document.getElementById('acc-avatar-url').value = p.avatar_url || '';
+
+            const myDeptIds = getUserDepartmentIds(p);
+            const primaryDeptSelect = document.getElementById('acc-primary-dept');
+            if (primaryDeptSelect) {
+                primaryDeptSelect.innerHTML = '<option value="">-- Chọn đơn vị / tổ chính --</option>' +
+                    AppState.departments.map(d => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join('');
+                primaryDeptSelect.value = p.department_id || myDeptIds[0] || '';
+            }
+
+            renderMultiDeptCheckboxesHTML('acc-multi-departments-list', 'acc_user_depts', myDeptIds, 'acc-primary-dept');
         }
 
         async function handleUpdateOwnProfile(event) {
@@ -4174,7 +4255,17 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
             const position = document.getElementById('acc-position').value.trim();
             const avatarUrl = document.getElementById('acc-avatar-url').value.trim();
 
-            setGlobalLoading(true, 'Đang cập nhật hồ sơ cá nhân...');
+            let primaryDeptId = document.getElementById('acc-primary-dept')?.value || null;
+            const checkedDeptIds = Array.from(document.querySelectorAll('input[name="acc_user_depts"]:checked')).map(cb => cb.value);
+
+            const deptSet = new Set(checkedDeptIds);
+            if (primaryDeptId) deptSet.add(primaryDeptId);
+            const finalDepartmentIds = [...deptSet];
+            if (!primaryDeptId && finalDepartmentIds.length > 0) {
+                primaryDeptId = finalDepartmentIds[0];
+            }
+
+            setGlobalLoading(true, 'Đang cập nhật hồ sơ & các Ban/Tổ/Nhóm tham gia...');
             try {
                 const { error } = await supabaseClient
                     .from('profiles')
@@ -4182,11 +4273,13 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
                         full_name: fullName,
                         phone,
                         position,
-                        avatar_url: avatarUrl || null
+                        avatar_url: avatarUrl || null,
+                        department_id: primaryDeptId,
+                        department_ids: finalDepartmentIds
                     })
                     .eq('id', AppState.profile.id);
                 if (error) throw error;
-                showToast('Đã lưu thông tin cá nhân!', 'success');
+                showToast('Đã lưu thông tin cá nhân và các Ban/Tổ/Nhóm tham gia!', 'success');
                 await refreshAllData(false);
             } catch (err) {
                 showToast('Không thể cập nhật hồ sơ: ' + err.message, 'error');
@@ -4608,11 +4701,34 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
             } catch (_) {}
         }
 
-        // Helpers tra cứu tên
+        // Helpers tra cứu tên & đa đơn vị (Multi-department membership)
         function getDepartmentName(deptId) {
             if (!deptId) return 'Toàn trường / Chung';
             const d = AppState.departments.find(x => x.id === deptId);
             return d ? d.name : 'Phòng ban';
+        }
+
+        function getUserDepartmentIds(profileObj) {
+            if (!profileObj) return [];
+            const set = new Set();
+            if (profileObj.department_id) set.add(profileObj.department_id);
+            if (Array.isArray(profileObj.department_ids)) {
+                profileObj.department_ids.forEach(id => {
+                    if (id) set.add(id);
+                });
+            }
+            return [...set];
+        }
+
+        function userHasDepartment(profileObj, deptId) {
+            if (!profileObj || !deptId) return false;
+            return getUserDepartmentIds(profileObj).includes(deptId);
+        }
+
+        function getUserDepartmentsDisplay(profileObj) {
+            const ids = getUserDepartmentIds(profileObj);
+            if (ids.length === 0) return 'Chưa phân tổ';
+            return ids.map(id => getDepartmentName(id)).join(', ');
         }
 
         function getUserFullName(userId) {
@@ -5276,16 +5392,16 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
                     email: 'minhnv@thptchilang.edu.vn',
                     password: 'ChiLang@2026',
                     phone: '0912345601',
-                    department_code: 'TO_THS',
+                    department_code: 'TO_THS, BAN_UDCNTT',
                     role: 'department_head',
-                    position: 'Tổ trưởng Tổ Toán - Hóa - Sinh'
+                    position: 'Tổ trưởng Tổ Toán - Hóa - Sinh, TV Ban UDCNTT'
                 },
                 {
                     full_name: 'Trần Thị Thu Hà',
                     email: 'hattt@thptchilang.edu.vn',
                     password: 'ChiLang@2026',
                     phone: '0912345602',
-                    department_code: 'TO_VS',
+                    department_code: 'TO_VS, NHOM_GVCN',
                     role: 'teacher',
                     position: 'Giáo viên Ngữ văn - GVCN 10A1'
                 },
@@ -5294,9 +5410,9 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
                     email: 'namlh@thptchilang.edu.vn',
                     password: 'ChiLang@2026',
                     phone: '0912345603',
-                    department_code: 'TO_LTCTQ',
+                    department_code: 'TO_LTCTQ, BAN_UDCNTT, NHOM_GVCN',
                     role: 'teacher',
-                    position: 'Giáo viên Tin học'
+                    position: 'Giáo viên Tin học - GVCN 11A2 - Ban UDCNTT'
                 },
                 {
                     full_name: 'Phạm Thị Lan',
@@ -5365,13 +5481,21 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
             };
             const role = roleMap[rawRole] || 'teacher';
 
-            // Ánh xạ department_id từ code hoặc tên phòng ban
-            let matchedDept = null;
+            // Ánh xạ nhiều Ban / Tổ / Nhóm từ chuỗi cách nhau dấu phẩy hoặc chấm phẩy (VD: "TO_THS, NHOM_GVCN, BAN_UDCNTT")
+            const matchedDeptIds = [];
+            const matchedDeptNames = [];
             if (deptCodeOrName) {
-                const upper = deptCodeOrName.toUpperCase();
-                matchedDept = AppState.departments.find(
-                    d => d.code.toUpperCase() === upper || d.name.toLowerCase() === deptCodeOrName.toLowerCase()
-                );
+                const tokens = deptCodeOrName.split(/[,;|]+/).map(t => t.trim()).filter(Boolean);
+                tokens.forEach(tok => {
+                    const upper = tok.toUpperCase();
+                    const found = AppState.departments.find(
+                        d => d.code.toUpperCase() === upper || d.name.toLowerCase() === tok.toLowerCase()
+                    );
+                    if (found && !matchedDeptIds.includes(found.id)) {
+                        matchedDeptIds.push(found.id);
+                        matchedDeptNames.push(found.name);
+                    }
+                });
             }
 
             return {
@@ -5379,8 +5503,9 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
                 email,
                 password,
                 phone,
-                department_id: matchedDept ? matchedDept.id : null,
-                department_label: matchedDept ? matchedDept.name : (deptCodeOrName || 'Chưa phân tổ'),
+                department_id: matchedDeptIds[0] || null,
+                department_ids: matchedDeptIds,
+                department_label: matchedDeptNames.length > 0 ? matchedDeptNames.join(', ') : (deptCodeOrName || 'Chưa phân tổ'),
                 role,
                 position,
                 status: 'ready'
@@ -5492,12 +5617,14 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
                     // Kiểm tra xem email này đã tồn tại trong bảng profiles chưa
                     const existingProf = AppState.profiles.find(p => (p.email || '').toLowerCase() === row.email.toLowerCase());
                     if (existingProf) {
+                        const mergedDepts = [...new Set([...getUserDepartmentIds(existingProf), ...(row.department_ids || [])])];
                         const { error: upErr } = await supabaseClient
                             .from('profiles')
                             .update({
                                 full_name: row.full_name,
                                 phone: row.phone || existingProf.phone,
-                                department_id: row.department_id || existingProf.department_id,
+                                department_id: row.department_id || existingProf.department_id || mergedDepts[0] || null,
+                                department_ids: mergedDepts,
                                 role: row.role,
                                 position: row.position,
                                 is_active: true
@@ -5542,6 +5669,7 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
                                 phone: row.phone,
                                 role: row.role,
                                 department_id: row.department_id,
+                                department_ids: row.department_ids || (row.department_id ? [row.department_id] : []),
                                 position: row.position,
                                 is_active: true
                             });
@@ -5571,9 +5699,9 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
             const now = new Date();
             const in48h = new Date(now.getTime() + 48 * 3600 * 1000);
 
-            // 1. Tính điểm hiệu suất của từng Tổ chuyên môn / Phòng ban
+            // 1. Tính điểm hiệu suất của từng Tổ chuyên môn / Phòng ban / Nhóm
             const deptMetrics = AppState.departments.map(dept => {
-                const members = AppState.profiles.filter(p => p.is_active && p.department_id === dept.id);
+                const members = AppState.profiles.filter(p => p.is_active && userHasDepartment(p, dept.id));
                 const memberIds = new Set(members.map(m => m.id));
 
                 const deptRecs = AppState.allRecipients.filter(r => memberIds.has(r.user_id));

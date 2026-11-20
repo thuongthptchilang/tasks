@@ -1132,6 +1132,7 @@ VALUES
     ('Tổ Toán - Hóa - Sinh', 'TO_THS', 'Tổ chuyên môn Toán học, Hóa học, Sinh học', TRUE),
     ('Tổ Lý - Tin - CN - TD - QPAN', 'TO_LTCTQ', 'Tổ chuyên môn Vật lý, Tin học, Công nghệ, Thể dục, QPAN', TRUE),
     ('Ban UDCNTT', 'BAN_UDCNTT', 'Ban Ứng dụng Công nghệ thông tin & Chuyển đổi số nhà trường', TRUE),
+    ('Nhóm GVCN', 'NHOM_GVCN', 'Đội ngũ Giáo viên chủ nhiệm các lớp khối 10, 11, 12', TRUE),
     ('Tổ Văn - Sử', 'TO_VS', 'Tổ chuyên môn Ngữ văn, Lịch sử', TRUE),
     ('Tổ Anh - Địa - KTPL', 'TO_ADK', 'Tổ chuyên môn Tiếng Anh, Địa lý, Kinh tế & Pháp luật', TRUE),
     ('Tổ Văn phòng', 'TO_VP', 'Tổ Hành chính - Văn thư - Y tế - Thư viện - Bảo vệ', TRUE)
@@ -1530,3 +1531,319 @@ SET
         ELSE public.profiles.role
     END,
     is_active = TRUE;
+
+-- =============================================================================
+-- 14. NÂNG CẤP ĐA VAI TRÒ / ĐA BAN - TỔ - NHÓM CHO GIÁO VIÊN & BỔ SUNG "NHÓM GVCN"
+-- (Cho phép 1 giáo viên vừa thuộc Tổ chuyên môn, vừa thuộc Nhóm GVCN, vừa thuộc Ban UDCNTT...)
+-- =============================================================================
+
+-- 14.1. Bổ sung "Nhóm GVCN" và đảm bảo "Ban UDCNTT" có trong bảng `departments`
+UPDATE public.departments
+SET
+    name = 'Ban UDCNTT',
+    code = 'BAN_UDCNTT',
+    description = 'Ban Ứng dụng Công nghệ thông tin & Chuyển đổi số nhà trường'
+WHERE code = 'TO_CONG_NGHE' OR name = 'Tổ Công nghệ';
+
+INSERT INTO public.departments (name, code, description, is_active)
+VALUES
+    ('Nhóm GVCN', 'NHOM_GVCN', 'Đội ngũ Giáo viên chủ nhiệm các lớp khối 10, 11, 12', TRUE),
+    ('Ban UDCNTT', 'BAN_UDCNTT', 'Ban Ứng dụng Công nghệ thông tin & Chuyển đổi số nhà trường', TRUE)
+ON CONFLICT (code) DO UPDATE
+SET name = EXCLUDED.name,
+    description = EXCLUDED.description,
+    is_active = TRUE;
+
+-- 14.2. Thêm cột `department_ids` (Mảng UUID[]) vào bảng `profiles` để lưu nhiều Ban / Tổ / Nhóm
+ALTER TABLE public.profiles
+ADD COLUMN IF NOT EXISTS department_ids UUID[] DEFAULT '{}'::UUID[];
+
+CREATE INDEX IF NOT EXISTS idx_profiles_department_ids ON public.profiles USING GIN (department_ids);
+
+-- Đồng bộ dữ liệu cũ: Nếu giáo viên đã có `department_id` chính thì tự động đưa vào mảng `department_ids`
+UPDATE public.profiles
+SET department_ids = ARRAY[department_id]
+WHERE department_id IS NOT NULL
+  AND (department_ids IS NULL OR cardinality(department_ids) = 0);
+
+-- 14.3. Helper Function lấy toàn bộ danh sách Ban/Tổ/Nhóm của user hiện tại (kết hợp cả department_id chính và mảng department_ids)
+CREATE OR REPLACE FUNCTION public.current_user_departments()
+RETURNS UUID[]
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+    SELECT
+        CASE
+            WHEN department_id IS NOT NULL AND NOT (department_id = ANY(COALESCE(department_ids, '{}'::UUID[])))
+                THEN array_append(COALESCE(department_ids, '{}'::UUID[]), department_id)
+            ELSE COALESCE(department_ids, '{}'::UUID[])
+        END
+    FROM public.profiles
+    WHERE id = auth.uid() AND is_active = TRUE;
+$$;
+
+-- Helper kiểm tra một profile bất kỳ có thuộc về một Ban/Tổ/Nhóm (p_dept_id) hay không
+CREATE OR REPLACE FUNCTION public.user_belongs_to_department(p_user_id UUID, p_dept_id UUID)
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+    SELECT EXISTS (
+        SELECT 1 FROM public.profiles p
+        WHERE p.id = p_user_id
+          AND p.is_active = TRUE
+          AND (
+              p.department_id = p_dept_id
+              OR p_dept_id = ANY(COALESCE(p.department_ids, '{}'::UUID[]))
+          )
+    );
+$$;
+
+-- 14.4. Cập nhật Trigger bảo vệ `profiles`:
+-- - Vẫn CHẶN TUYỆT ĐỐI giáo viên tự nâng quyền `role` hoặc tự mở khóa `is_active`.
+-- - CHO PHÉP giáo viên trong phần "Tài khoản" tự tích chọn các Ban / Tổ / Nhóm (`department_id`, `department_ids`) mà mình tham gia,
+--   đồng thời tự động đồng bộ `department_id` chính vào mảng `department_ids`.
+CREATE OR REPLACE FUNCTION public.protect_profile_sensitive_columns()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+    -- Tự động đồng bộ: đảm bảo `department_id` chính luôn nằm trong mảng `department_ids`
+    IF NEW.department_ids IS NULL THEN
+        NEW.department_ids := '{}'::UUID[];
+    END IF;
+
+    IF NEW.department_id IS NOT NULL AND NOT (NEW.department_id = ANY(NEW.department_ids)) THEN
+        NEW.department_ids := array_prepend(NEW.department_id, NEW.department_ids);
+    ELSIF NEW.department_id IS NULL AND cardinality(NEW.department_ids) > 0 THEN
+        NEW.department_id := NEW.department_ids[1];
+    END IF;
+
+    -- Nếu gọi từ SQL Editor (auth.uid() IS NULL) hoặc người gọi là ADMIN/BGH thì cho phép
+    IF auth.uid() IS NULL OR public.is_admin() THEN
+        IF auth.uid() IS NOT NULL AND NOT public.is_super_admin() THEN
+            IF NEW.role = 'super_admin' OR OLD.role = 'super_admin' THEN
+                RAISE EXCEPTION 'Chỉ Quản trị hệ thống (ADMIN) mới có quyền thay đổi tài khoản Super Admin.';
+            END IF;
+        END IF;
+        RETURN NEW;
+    END IF;
+
+    -- Đối với người dùng thông thường tự cập nhật hồ sơ cá nhân:
+    -- Chặn tự đổi role và is_active, nhưng CHO PHÉP cập nhật department_id & department_ids (tích chọn Ban/Tổ/Nhóm)
+    IF NEW.role IS DISTINCT FROM OLD.role THEN
+        RAISE EXCEPTION 'Bảo mật: Bạn không có quyền tự thay đổi vai trò hệ thống (role) của mình!';
+    END IF;
+
+    IF NEW.is_active IS DISTINCT FROM OLD.is_active THEN
+        RAISE EXCEPTION 'Bảo mật: Bạn không có quyền tự thay đổi trạng thái kích hoạt tài khoản!';
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+-- 14.5. Cập nhật Trigger phân phối người nhận thông báo (`distribute_announcement_recipients`)
+-- Khi thông báo gửi cho 1 Ban/Tổ/Nhóm (VD: Nhóm GVCN hoặc Ban UDCNTT),
+-- TẤT CẢ giáo viên có tích chọn nhóm đó trong `department_ids` (hoặc `department_id`) đều tự động nhận được thông báo!
+CREATE OR REPLACE FUNCTION public.distribute_announcement_recipients()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_recipient RECORD;
+    v_target_dept UUID;
+    v_should_distribute BOOLEAN := FALSE;
+BEGIN
+    IF TG_OP = 'INSERT' AND NEW.is_published = TRUE THEN
+        v_should_distribute := TRUE;
+    ELSIF TG_OP = 'UPDATE' AND NEW.is_published = TRUE AND COALESCE(OLD.is_published, FALSE) = FALSE THEN
+        v_should_distribute := TRUE;
+    END IF;
+
+    IF NOT v_should_distribute THEN
+        RETURN NEW;
+    END IF;
+
+    v_target_dept := COALESCE(NEW.target_department_id, NEW.department_id);
+
+    FOR v_recipient IN
+        SELECT p.id AS user_id
+        FROM public.profiles p
+        WHERE p.is_active = TRUE
+          AND (
+              (NEW.target_type = 'all')
+              OR (
+                  NEW.target_type = 'department'
+                  AND (
+                      p.department_id = v_target_dept
+                      OR v_target_dept = ANY(COALESCE(p.department_ids, '{}'::UUID[]))
+                  )
+              )
+              OR (NEW.target_type = 'role' AND p.role = NEW.target_role)
+              OR (NEW.target_type = 'selected' AND p.id = ANY(COALESCE(NEW.target_user_ids, '{}')))
+          )
+    LOOP
+        INSERT INTO public.announcement_recipients (announcement_id, user_id, read_at)
+        VALUES (
+            NEW.id,
+            v_recipient.user_id,
+            CASE WHEN v_recipient.user_id = NEW.sender_id THEN NOW() ELSE NULL END
+        )
+        ON CONFLICT (announcement_id, user_id) DO NOTHING;
+
+        IF v_recipient.user_id IS DISTINCT FROM NEW.sender_id THEN
+            INSERT INTO public.notifications (user_id, title, message, type, reference_id, is_read)
+            VALUES (
+                v_recipient.user_id,
+                CASE
+                    WHEN NEW.priority = 'urgent' THEN '[KHẨN] ' || NEW.title
+                    WHEN NEW.priority = 'important' THEN '[QUAN TRỌNG] ' || NEW.title
+                    ELSE 'Thông báo mới: ' || NEW.title
+                END,
+                LEFT(REGEXP_REPLACE(NEW.content, '\s+', ' ', 'g'), 140),
+                'announcement',
+                NEW.id,
+                FALSE
+            );
+        END IF;
+    END LOOP;
+
+    RETURN NEW;
+END;
+$$;
+
+-- 14.6. Cập nhật các hàm kiểm tra quyền và RLS Policy để hỗ trợ Đa Ban/Tổ/Nhóm (`current_user_departments()`)
+CREATE OR REPLACE FUNCTION public.can_view_announcement_tracking(p_announcement_id UUID)
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+    SELECT EXISTS (
+        SELECT 1 FROM public.announcements a
+        WHERE a.id = p_announcement_id
+          AND (
+              public.is_admin()
+              OR a.sender_id = auth.uid()
+              OR (
+                  public.current_user_role() IN ('department_head', 'accountant', 'youth_union')
+                  AND a.department_id = ANY(public.current_user_departments())
+              )
+          )
+    );
+$$;
+
+CREATE OR REPLACE FUNCTION public.can_manage_task(p_task_id UUID)
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+    SELECT EXISTS (
+        SELECT 1 FROM public.tasks t
+        WHERE t.id = p_task_id
+          AND (
+              public.is_admin()
+              OR t.created_by = auth.uid()
+              OR (
+                  public.current_user_role() IN ('department_head', 'accountant', 'youth_union')
+                  AND t.department_id = ANY(public.current_user_departments())
+              )
+          )
+    );
+$$;
+
+DROP POLICY IF EXISTS "announcements_select_policy" ON public.announcements;
+CREATE POLICY "announcements_select_policy"
+    ON public.announcements FOR SELECT
+    TO authenticated
+    USING (
+        public.is_admin()
+        OR sender_id = auth.uid()
+        OR (
+            public.current_user_role() IN ('department_head', 'accountant', 'youth_union')
+            AND department_id = ANY(public.current_user_departments())
+        )
+        OR (
+            is_published = TRUE
+            AND (
+                target_type = 'all'
+                OR public.is_announcement_recipient(id)
+                OR (
+                    target_type = 'department'
+                    AND COALESCE(target_department_id, department_id) = ANY(public.current_user_departments())
+                )
+            )
+        )
+    );
+
+DROP POLICY IF EXISTS "announcements_insert_policy" ON public.announcements;
+CREATE POLICY "announcements_insert_policy"
+    ON public.announcements FOR INSERT
+    TO authenticated
+    WITH CHECK (
+        public.is_admin()
+        OR (
+            public.current_user_role() IN ('department_head', 'accountant', 'youth_union')
+            AND sender_id = auth.uid()
+            AND department_id = ANY(public.current_user_departments())
+        )
+    );
+
+DROP POLICY IF EXISTS "announcements_update_policy" ON public.announcements;
+CREATE POLICY "announcements_update_policy"
+    ON public.announcements FOR UPDATE
+    TO authenticated
+    USING (
+        public.is_admin()
+        OR (
+            public.current_user_role() IN ('department_head', 'accountant', 'youth_union')
+            AND sender_id = auth.uid()
+        )
+    )
+    WITH CHECK (
+        public.is_admin()
+        OR (
+            public.current_user_role() IN ('department_head', 'accountant', 'youth_union')
+            AND sender_id = auth.uid()
+            AND department_id = ANY(public.current_user_departments())
+        )
+    );
+
+DROP POLICY IF EXISTS "tasks_select_policy" ON public.tasks;
+CREATE POLICY "tasks_select_policy"
+    ON public.tasks FOR SELECT
+    TO authenticated
+    USING (
+        public.is_admin()
+        OR created_by = auth.uid()
+        OR public.is_task_assignee(id)
+        OR (
+            department_id IS NOT NULL
+            AND department_id = ANY(public.current_user_departments())
+        )
+    );
+
+DROP POLICY IF EXISTS "tasks_insert_policy" ON public.tasks;
+CREATE POLICY "tasks_insert_policy"
+    ON public.tasks FOR INSERT
+    TO authenticated
+    WITH CHECK (
+        public.is_admin()
+        OR (
+            public.current_user_role() IN ('department_head', 'accountant', 'youth_union')
+            AND created_by = auth.uid()
+            AND department_id = ANY(public.current_user_departments())
+        )
+    );
