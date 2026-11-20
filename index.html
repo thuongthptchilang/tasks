@@ -2,16 +2,22 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
     <meta name="theme-color" content="#1e40af" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="THPT Chi Lăng" />
     <meta name="description" content="Cổng điều hành và quản lý thông báo tập trung Trường THPT Chi Lăng" />
     <title>CỔNG ĐIỀU HÀNH - THPT CHI LĂNG</title>
 
-    <!-- PWA Web App Manifest (Data URI để chạy độc lập trên GitHub Pages chỉ với 1 file index.html) -->
-    <link rel="manifest" href="data:application/manifest+json;charset=utf-8,%7B%22name%22%3A%22C%E1%BB%95ng%20%C4%90i%E1%BB%81u%20H%C3%A0nh%20THPT%20Chi%20L%C4%83ng%22%2C%22short_name%22%3A%22THPT%20Chi%20L%C4%83ng%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f8fafc%22%2C%22theme_color%22%3A%22%231e40af%22%7D" />
+    <!-- Biểu tượng App (App Icon) cho iPhone/iPad (iOS), Android và Trình duyệt dùng trực tiếp file Logocl.png -->
+    <link id="app-favicon" rel="icon" type="image/png" href="https://raw.githubusercontent.com/truongthptchilang/tasks/main/Logocl.png" />
+    <link id="app-apple-touch-icon" rel="apple-touch-icon" sizes="180x180" href="https://raw.githubusercontent.com/truongthptchilang/tasks/main/Logocl.png" />
+    <link id="app-apple-touch-icon-precomposed" rel="apple-touch-icon-precomposed" href="https://raw.githubusercontent.com/truongthptchilang/tasks/main/Logocl.png" />
+
+    <!-- PWA Web App Manifest chuẩn cho Android Chrome (WebAPK) & iOS Safari -->
+    <link id="app-pwa-manifest" rel="manifest" href="./manifest.json" />
 
     <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -87,6 +93,30 @@
             background-color: #e2e8f0;
             border-radius: 0.5rem;
         }
+        /* Tối ưu chuẩn Mobile Web App (iOS Safe Area & Touch UX) */
+        html, body {
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior-y: none;
+        }
+        .pb-safe {
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+        .pt-safe {
+            padding-top: env(safe-area-inset-top, 0px);
+        }
+        .bottom-nav-link.active {
+            color: #1e40af;
+            font-weight: 700;
+        }
+        .bottom-nav-link.active i {
+            transform: translateY(-1px);
+        }
+        /* Chống iOS Safari tự động zoom khi chạm vào ô input có cỡ chữ < 16px */
+        @media screen and (max-width: 768px) {
+            input, select, textarea {
+                font-size: 16px !important;
+            }
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col antialiased selection:bg-blue-600 selection:text-white">
@@ -117,13 +147,17 @@
         <header class="w-full border-b border-slate-200/80 bg-white/90 backdrop-blur-md sticky top-0 z-20">
             <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                    <img id="guest-school-logo" src="https://ui-avatars.com/api/?name=CL&background=1e40af&color=fff&size=128&bold=true" alt="Logo THPT Chi Lăng" class="w-10 h-10 rounded-xl object-cover shadow-xs border border-blue-100" />
+                    <img id="guest-school-logo" src="https://raw.githubusercontent.com/truongthptchilang/tasks/main/Logocl.png" onerror="if(this.src.indexOf('Logocl.png')!==-1){this.src='https://raw.githubusercontent.com/truongthptchilang/tasks/main/logocl.png';}else{this.onerror=null;this.src='https://ui-avatars.com/api/?name=CL&background=1e40af&color=fff&size=128&bold=true';}" alt="Logo THPT Chi Lăng" class="w-10 h-10 rounded-xl object-contain bg-white p-0.5 shadow-xs border border-blue-100" />
                     <div>
                         <div class="text-xs font-bold tracking-wider text-blue-700 uppercase">CỔNG ĐIỀU HÀNH</div>
                         <div id="guest-school-name" class="text-sm sm:text-base font-extrabold text-slate-900">TRƯỜNG THPT CHI LĂNG</div>
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
+                    <button type="button" onclick="openInstallPwaGuideModal()" class="px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 text-xs font-bold rounded-xl transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-mobile-screen-button"></i>
+                        <span>Cài App</span>
+                    </button>
                     <button onclick="focusLoginBox()" class="px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition">
                         <i class="fa-solid fa-right-to-bracket mr-1.5"></i> Đăng nhập
                     </button>
@@ -183,7 +217,7 @@
             <div class="lg:col-span-5">
                 <div class="bg-white rounded-2xl shadow-lg border border-slate-200/90 p-6 sm:p-8">
                     <div class="flex flex-col items-center text-center mb-6">
-                        <img id="login-school-logo" src="https://ui-avatars.com/api/?name=CL&background=1e40af&color=fff&size=128&bold=true" alt="Logo" class="w-16 h-16 rounded-2xl object-cover shadow-md border-2 border-blue-100 mb-3" />
+                        <img id="login-school-logo" src="https://raw.githubusercontent.com/truongthptchilang/tasks/main/Logocl.png" onerror="if(this.src.indexOf('Logocl.png')!==-1){this.src='https://raw.githubusercontent.com/truongthptchilang/tasks/main/logocl.png';}else{this.onerror=null;this.src='https://ui-avatars.com/api/?name=CL&background=1e40af&color=fff&size=128&bold=true';}" alt="Logo" class="w-16 h-16 rounded-2xl object-contain bg-white p-1 shadow-md border-2 border-blue-100 mb-3" />
                         <span class="text-xs font-bold uppercase tracking-widest text-blue-700">CỔNG ĐIỀU HÀNH</span>
                         <h2 class="text-xl font-extrabold text-slate-900 mt-0.5">THPT CHI LĂNG</h2>
                         <p class="text-xs text-slate-500 mt-1">Đăng nhập hệ thống điều hành tác nghiệp nội bộ</p>
@@ -250,7 +284,7 @@
             <!-- Brand Header -->
             <div class="h-16 px-5 border-b border-slate-200 flex items-center justify-between">
                 <div class="flex items-center gap-3 min-w-0">
-                    <img id="sidebar-school-logo" src="https://ui-avatars.com/api/?name=CL&background=1e40af&color=fff&size=128&bold=true" alt="Logo" class="w-9 h-9 rounded-xl object-cover border border-blue-100 shrink-0" />
+                    <img id="sidebar-school-logo" src="https://raw.githubusercontent.com/truongthptchilang/tasks/main/Logocl.png" onerror="if(this.src.indexOf('Logocl.png')!==-1){this.src='https://raw.githubusercontent.com/truongthptchilang/tasks/main/logocl.png';}else{this.onerror=null;this.src='https://ui-avatars.com/api/?name=CL&background=1e40af&color=fff&size=128&bold=true';}" alt="Logo" class="w-9 h-9 rounded-xl object-contain bg-white p-0.5 border border-blue-100 shrink-0" />
                     <div class="min-w-0">
                         <div class="text-[11px] font-bold uppercase tracking-wider text-blue-700 truncate">CỔNG ĐIỀU HÀNH</div>
                         <div id="sidebar-school-name" class="text-sm font-extrabold text-slate-900 truncate">THPT CHI LĂNG</div>
@@ -350,7 +384,7 @@
         <!-- MAIN WORKSPACE -->
         <div class="flex-1 flex flex-col min-w-0">
             <!-- TOPBAR -->
-            <header class="h-16 bg-white border-b border-slate-200 px-4 sm:px-6 flex items-center justify-between sticky top-0 z-20">
+            <header class="h-16 bg-white border-b border-slate-200 px-4 sm:px-6 flex items-center justify-between sticky top-0 z-20 pt-safe">
                 <div class="flex items-center gap-3">
                     <button type="button" onclick="toggleMobileSidebar(true)" class="lg:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100">
                         <i class="fa-solid fa-bars text-lg"></i>
@@ -361,8 +395,13 @@
                     </div>
                 </div>
 
-                <!-- Right actions: Nút tạo nhanh + Chuông thông báo nội bộ Realtime + Làm mới -->
+                <!-- Right actions: Nút Cài App + Nút tạo nhanh + Chuông thông báo nội bộ Realtime + Làm mới -->
                 <div class="flex items-center gap-2 sm:gap-3">
+                    <button id="btn-topbar-install-app" type="button" onclick="openInstallPwaGuideModal()" class="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 text-xs font-bold rounded-xl transition" title="Cài đặt ứng dụng về màn hình chính điện thoại">
+                        <i class="fa-solid fa-mobile-screen-button"></i>
+                        <span class="hidden md:inline">Cài App</span>
+                    </button>
+
                     <button id="btn-topbar-create-ann" type="button" onclick="openAnnouncementFormModal()" class="hidden sm:inline-flex items-center gap-2 px-3.5 py-2 bg-blue-700 hover:bg-blue-800 text-white text-xs font-semibold rounded-xl shadow-xs transition">
                         <i class="fa-solid fa-plus"></i>
                         <span>Tạo thông báo</span>
@@ -394,8 +433,8 @@
                 </div>
             </header>
 
-            <!-- MAIN CONTENT AREA -->
-            <main class="flex-1 p-4 sm:p-6 max-w-7xl w-full mx-auto space-y-6">
+            <!-- MAIN CONTENT AREA (pb-24 trên điện thoại để không bị thanh Bottom Tab Bar che khuất) -->
+            <main class="flex-1 p-4 sm:p-6 pb-24 lg:pb-8 max-w-7xl w-full mx-auto space-y-6">
 
                 <!-- =========================================================
                      VIEW 1: DASHBOARD (TRANG CHỦ)
@@ -1075,6 +1114,42 @@
                 </section>
 
             </main>
+
+            <!-- THANH ĐIỀU HƯỚNG DƯỚI ĐÁY (MOBILE / TABLET BOTTOM NAVIGATION BAR - CHUẨN APP ANDROID & iOS) -->
+            <nav id="mobile-bottom-nav" class="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200 pb-safe shadow-lg">
+                <div class="grid grid-cols-5 h-16">
+                    <button type="button" data-bottom-view="dashboard" onclick="navigateToView('dashboard')" class="bottom-nav-link active flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-blue-700 transition">
+                        <i class="fa-solid fa-house text-base"></i>
+                        <span class="text-[10px] font-semibold">Trang chủ</span>
+                    </button>
+
+                    <button type="button" data-bottom-view="announcements" onclick="navigateToView('announcements')" class="bottom-nav-link relative flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-blue-700 transition">
+                        <div class="relative">
+                            <i class="fa-solid fa-bullhorn text-base"></i>
+                            <span id="bottom-unread-ann-badge" class="hidden absolute -top-1.5 -right-3 min-w-[16px] h-4 px-1 rounded-full bg-red-600 text-white text-[9px] font-extrabold flex items-center justify-center">0</span>
+                        </div>
+                        <span class="text-[10px] font-semibold">Thông báo</span>
+                    </button>
+
+                    <button type="button" data-bottom-view="tasks" onclick="navigateToView('tasks')" class="bottom-nav-link relative flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-blue-700 transition">
+                        <div class="relative">
+                            <i class="fa-solid fa-circle-check text-base"></i>
+                            <span id="bottom-pending-task-badge" class="hidden absolute -top-1.5 -right-3 min-w-[16px] h-4 px-1 rounded-full bg-amber-500 text-white text-[9px] font-extrabold flex items-center justify-center">0</span>
+                        </div>
+                        <span class="text-[10px] font-semibold">Công việc</span>
+                    </button>
+
+                    <button type="button" data-bottom-view="ai" onclick="navigateToView('ai')" class="bottom-nav-link flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-indigo-700 transition">
+                        <i class="fa-solid fa-robot text-base text-indigo-600"></i>
+                        <span class="text-[10px] font-semibold">Trợ lý AI</span>
+                    </button>
+
+                    <button type="button" data-bottom-view="account" onclick="navigateToView('account')" class="bottom-nav-link flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-blue-700 transition">
+                        <i class="fa-regular fa-user text-base"></i>
+                        <span class="text-[10px] font-semibold">Tài khoản</span>
+                    </button>
+                </div>
+            </nav>
         </div>
     </div>
     <!-- =====================================================================
@@ -1698,6 +1773,69 @@
             </div>
         </div>
     </div>
+
+    <!-- MODAL 11: HƯỚNG DẪN & CÀI ĐẶT WEB APP (PWA) TRÊN ANDROID, iPHONE / iPAD, MÁY TÍNH -->
+    <div id="modal-install-pwa-guide" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-lg w-full overflow-hidden">
+            <div class="px-5 py-4 bg-gradient-to-r from-blue-800 to-indigo-800 text-white flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <img id="pwa-modal-logo" src="https://raw.githubusercontent.com/truongthptchilang/tasks/main/Logocl.png" onerror="if(this.src.indexOf('Logocl.png')!==-1){this.src='https://raw.githubusercontent.com/truongthptchilang/tasks/main/logocl.png';}else{this.onerror=null;this.src='https://ui-avatars.com/api/?name=CL&background=1e40af&color=fff&size=128&bold=true';}" alt="App Icon" class="w-11 h-11 rounded-xl bg-white p-1 object-contain shadow-sm" />
+                    <div>
+                        <h3 class="text-sm sm:text-base font-extrabold">📲 Cài đặt App THPT Chi Lăng</h3>
+                        <p class="text-[11px] text-blue-200">Chạy toàn màn hình trên Android, iPhone, iPad</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeModal('modal-install-pwa-guide')" class="text-white/80 hover:text-white">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="p-5 space-y-4 text-xs sm:text-sm text-slate-700">
+                <!-- Nút cài đặt trực tiếp 1 chạm (Khi trình duyệt Android Chrome / Edge hỗ trợ beforeinstallprompt) -->
+                <div id="pwa-direct-install-box" class="hidden p-4 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-2.5 text-center">
+                    <p class="text-xs font-bold text-emerald-900">Thiết bị của Thầy/Cô hỗ trợ cài đặt trực tiếp chỉ với 1 chạm!</p>
+                    <button type="button" onclick="triggerNativePwaInstallPrompt()" class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl shadow-xs transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-download"></i>
+                        <span>Cài đặt Ứng dụng THPT Chi Lăng ngay</span>
+                    </button>
+                </div>
+
+                <!-- Hướng dẫn cho iPhone / iPad (iOS Safari) -->
+                <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                    <div class="flex items-center gap-2 font-extrabold text-slate-900">
+                        <i class="fa-brands fa-apple text-lg text-slate-800"></i>
+                        <span>1. Trên iPhone / iPad (Trình duyệt Safari)</span>
+                    </div>
+                    <ol class="list-decimal list-inside space-y-1.5 text-xs text-slate-600 pl-1">
+                        <li>Mở trang này bằng trình duyệt <strong>Safari</strong> trên iPhone hoặc iPad.</li>
+                        <li>Chạm vào nút <strong>Chia sẻ (Share)</strong> <i class="fa-solid fa-arrow-up-from-bracket text-blue-700 mx-0.5"></i> ở thanh công cụ dưới đáy màn hình.</li>
+                        <li>Cuộn xuống và chọn <strong>"Thêm vào MH chính" (Add to Home Screen)</strong> <i class="fa-regular fa-square-plus text-blue-700 mx-0.5"></i>.</li>
+                        <li>Nhấn <strong>"Thêm" (Add)</strong> ở góc trên bên phải. Biểu tượng <strong>THPT Chi Lăng</strong> sẽ xuất hiện ngay trên màn hình chính như một ứng dụng thực thụ!</li>
+                    </ol>
+                </div>
+
+                <!-- Hướng dẫn cho Điện thoại Android (Chrome / Samsung Internet) -->
+                <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                    <div class="flex items-center gap-2 font-extrabold text-slate-900">
+                        <i class="fa-brands fa-android text-lg text-emerald-600"></i>
+                        <span>2. Trên Điện thoại / Máy tính bảng Android (Chrome)</span>
+                    </div>
+                    <ol class="list-decimal list-inside space-y-1.5 text-xs text-slate-600 pl-1">
+                        <li>Mở trang này bằng trình duyệt <strong>Google Chrome</strong>.</li>
+                        <li>Chạm vào biểu tượng <strong>3 chấm dọc</strong> <i class="fa-solid fa-ellipsis-vertical text-blue-700 mx-1"></i> ở góc trên bên phải trình duyệt.</li>
+                        <li>Chọn <strong>"Cài đặt ứng dụng" (Install app)</strong> hoặc <strong>"Thêm vào màn hình chính"</strong>.</li>
+                        <li>Xác nhận <strong>Cài đặt</strong> để đưa ứng dụng ra màn hình điện thoại.</li>
+                    </ol>
+                </div>
+            </div>
+
+            <div class="px-5 py-3.5 bg-slate-50 border-t border-slate-200 flex justify-end">
+                <button type="button" onclick="closeModal('modal-install-pwa-guide')" class="px-5 py-2 bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold rounded-xl">
+                    Đã hiểu
+                </button>
+            </div>
+        </div>
+    </div>
     <!-- =====================================================================
          JAVASCRIPT ENGINE - CỔNG ĐIỀU HÀNH THPT CHI LĂNG (ES2022+)
          Cấu trúc 16 phần rõ ràng:
@@ -1892,10 +2030,19 @@
             }
         }
 
+        const DEFAULT_GITHUB_LOGO_UPPER = 'https://raw.githubusercontent.com/truongthptchilang/tasks/main/Logocl.png';
+        const DEFAULT_GITHUB_LOGO_LOWER = 'https://raw.githubusercontent.com/truongthptchilang/tasks/main/logocl.png';
+        const FALLBACK_AVATAR_LOGO = 'https://ui-avatars.com/api/?name=CL&background=1e40af&color=fff&size=128&bold=true';
+        let deferredPwaInstallPrompt = null;
+
         function normalizeLogoUrl(rawUrl) {
-            const fallbackLogo = 'https://ui-avatars.com/api/?name=CL&background=1e40af&color=fff&size=128&bold=true';
-            if (!rawUrl || !String(rawUrl).trim()) return fallbackLogo;
+            if (!rawUrl || !String(rawUrl).trim()) return DEFAULT_GITHUB_LOGO_UPPER;
             let u = String(rawUrl).trim();
+
+            // Nếu đang là link ui-avatars mặc định cũ thì ưu tiên nâng cấp sang Logocl.png trên GitHub của thầy
+            if (u.includes('ui-avatars.com/api/?name=CL')) {
+                return DEFAULT_GITHUB_LOGO_UPPER;
+            }
 
             // Tự động chuyển link trang xem file GitHub (github.com/<owner>/<repo>/blob/<branch>/<path>)
             // sang link ảnh trực tiếp (raw.githubusercontent.com/<owner>/<repo>/<branch>/<path>)
@@ -1905,33 +2052,48 @@
                 return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${filePath.split('?')[0]}`;
             }
 
-            // Nếu người dùng chỉ nhập tên file như "logocl.png" hoặc "./logocl.png"
+            // Nếu người dùng chỉ nhập tên file như "Logocl.png" hoặc "logocl.png"
             if (!u.startsWith('http://') && !u.startsWith('https://') && !u.startsWith('data:')) {
-                return u;
+                const cleanFile = u.replace(/^\.?\//, '');
+                return `https://raw.githubusercontent.com/truongthptchilang/tasks/main/${cleanFile}`;
             }
             return u;
         }
 
+        function updateDynamicPwaManifestAndIcons(logoUrl) {
+            const finalLogo = logoUrl || DEFAULT_GITHUB_LOGO_UPPER;
+
+            ['app-favicon', 'app-apple-touch-icon', 'app-apple-touch-icon-precomposed'].forEach(id => {
+                const link = document.getElementById(id);
+                if (link) link.href = finalLogo;
+            });
+            // Giữ nguyên href="./manifest.json" để Chrome trên Android biên dịch gói ứng dụng thực thụ (WebAPK)
+        }
+
         function applySchoolBrandingToDOM() {
             const s = AppState.schoolSettings;
-            if (!s) return;
-            const name = s.school_name || 'TRƯỜNG THPT CHI LĂNG';
-            const fallbackLogo = 'https://ui-avatars.com/api/?name=CL&background=1e40af&color=fff&size=128&bold=true';
-            const logo = normalizeLogoUrl(s.school_logo);
+            const name = s?.school_name || 'TRƯỜNG THPT CHI LĂNG';
+            const logo = normalizeLogoUrl(s?.school_logo);
 
             ['guest-school-name', 'sidebar-school-name'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.textContent = name;
             });
-            ['guest-school-logo', 'login-school-logo', 'sidebar-school-logo'].forEach(id => {
+            ['guest-school-logo', 'login-school-logo', 'sidebar-school-logo', 'pwa-modal-logo'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) {
                     el.onerror = () => {
-                        if (el.src !== fallbackLogo) el.src = fallbackLogo;
+                        if (el.src === DEFAULT_GITHUB_LOGO_UPPER) {
+                            el.src = DEFAULT_GITHUB_LOGO_LOWER;
+                        } else if (el.src !== FALLBACK_AVATAR_LOGO) {
+                            el.src = FALLBACK_AVATAR_LOGO;
+                        }
                     };
                     el.src = logo;
                 }
             });
+
+            updateDynamicPwaManifestAndIcons(logo, name);
         }
 
         function showGuestScreen() {
@@ -2408,14 +2570,26 @@
             document.getElementById('stat-due-soon-items').textContent = dueSoonTasks.length + dueSoonAnns.length;
             document.getElementById('stat-completed-items').textContent = completedMyTasks.length + completedAnns.length;
 
-            // Cập nhật badge trên Sidebar
+            // Cập nhật badge trên Sidebar & Thanh điều hướng dưới đáy (Mobile Bottom Nav)
             const sbAnnBadge = document.getElementById('sidebar-unread-ann-badge');
             sbAnnBadge.textContent = unreadAnns.length;
             sbAnnBadge.classList.toggle('hidden', unreadAnns.length === 0);
 
+            const btmAnnBadge = document.getElementById('bottom-unread-ann-badge');
+            if (btmAnnBadge) {
+                btmAnnBadge.textContent = unreadAnns.length > 99 ? '99+' : unreadAnns.length;
+                btmAnnBadge.classList.toggle('hidden', unreadAnns.length === 0);
+            }
+
             const sbTaskBadge = document.getElementById('sidebar-pending-task-badge');
             sbTaskBadge.textContent = uncompletedMyTasks.length;
             sbTaskBadge.classList.toggle('hidden', uncompletedMyTasks.length === 0);
+
+            const btmTaskBadge = document.getElementById('bottom-pending-task-badge');
+            if (btmTaskBadge) {
+                btmTaskBadge.textContent = uncompletedMyTasks.length > 99 ? '99+' : uncompletedMyTasks.length;
+                btmTaskBadge.classList.toggle('hidden', uncompletedMyTasks.length === 0);
+            }
 
             // Render Khu vực "VIỆC CẦN XỬ LÝ" (Kết hợp Task chưa xong & Thông báo có deadline chưa hoàn thành)
             const urgentItems = [];
@@ -4498,6 +4672,10 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
                 btn.classList.toggle('active', btn.getAttribute('data-view') === viewName);
             });
 
+            document.querySelectorAll('.bottom-nav-link').forEach(btn => {
+                btn.classList.toggle('active', btn.getAttribute('data-bottom-view') === viewName);
+            });
+
             const titles = {
                 dashboard: ['Trang chủ điều hành', 'Tổng quan thông báo và công việc cần xử lý'],
                 announcements: ['Thông báo hành chính', 'Quản lý và xác nhận thông báo tập trung'],
@@ -4979,45 +5157,10 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
         async function initPwaServiceWorker() {
             if (!('serviceWorker' in navigator)) return;
             try {
-                // Tạo Inline Service Worker qua Blob URL để chạy trọn vẹn chỉ với 1 file index.html trên GitHub Pages
-                const swSource = `
-                    self.addEventListener('install', (event) => {
-                        self.skipWaiting();
-                    });
-                    self.addEventListener('activate', (event) => {
-                        event.waitUntil(self.clients.claim());
-                    });
-                    self.addEventListener('push', (event) => {
-                        let data = { title: 'Cổng Điều Hành THPT Chi Lăng', body: 'Có thông báo điều hành mới.' };
-                        try {
-                            if (event.data) data = event.data.json();
-                        } catch (_) {}
-                        event.waitUntil(
-                            self.registration.showNotification(data.title || 'THPT Chi Lăng', {
-                                body: data.body || '',
-                                icon: 'https://ui-avatars.com/api/?name=CL&background=1e40af&color=fff&size=128&bold=true',
-                                badge: 'https://ui-avatars.com/api/?name=CL&background=1e40af&color=fff&size=128&bold=true',
-                                data: data
-                            })
-                        );
-                    });
-                    self.addEventListener('notificationclick', (event) => {
-                        event.notification.close();
-                        event.waitUntil(
-                            self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-                                if (clientList.length > 0) {
-                                    return clientList[0].focus();
-                                }
-                                return self.clients.openWindow('./');
-                            })
-                        );
-                    });
-                `;
-                const blob = new Blob([swSource], { type: 'application/javascript' });
-                const swUrl = URL.createObjectURL(blob);
-                AppState.swRegistration = await navigator.serviceWorker.register(swUrl);
-            } catch (_) {
-                // Một số trình duyệt chặn Blob URL Service Worker, sẽ dùng Web Notification API + navigator.serviceWorker.ready
+                // Đăng ký file ./sw.js thực tế trên cùng domain GitHub Pages (Bắt buộc để Chrome Android cho phép "Cài đặt ứng dụng" / WebAPK)
+                AppState.swRegistration = await navigator.serviceWorker.register('./sw.js', { scope: './' });
+            } catch (err) {
+                console.warn('Service worker ./sw.js registration fallback:', err);
                 try {
                     AppState.swRegistration = await navigator.serviceWorker.ready;
                 } catch (__) {}
@@ -5960,6 +6103,48 @@ ${riskLines}
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i><span>Phân tích chuyên sâu bằng AI</span>';
+            }
+        }
+
+        // ---------------------------------------------------------------------
+        // PWA MOBILE APP INSTALLER (ANDROID 1-CLICK & iOS SAFARI HOME SCREEN)
+        // ---------------------------------------------------------------------
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPwaInstallPrompt = e;
+            const directBox = document.getElementById('pwa-direct-install-box');
+            if (directBox) directBox.classList.remove('hidden');
+        });
+
+        window.addEventListener('appinstalled', () => {
+            deferredPwaInstallPrompt = null;
+            const directBox = document.getElementById('pwa-direct-install-box');
+            if (directBox) directBox.classList.add('hidden');
+            showToast('Đã cài đặt Ứng dụng Cổng Điều Hành THPT Chi Lăng vào thiết bị!', 'success');
+        });
+
+        function openInstallPwaGuideModal() {
+            const directBox = document.getElementById('pwa-direct-install-box');
+            if (directBox) {
+                directBox.classList.toggle('hidden', !deferredPwaInstallPrompt);
+            }
+            openModal('modal-install-pwa-guide');
+        }
+
+        async function triggerNativePwaInstallPrompt() {
+            if (!deferredPwaInstallPrompt) {
+                showToast('Vui lòng làm theo hướng dẫn cài đặt bên dưới cho trình duyệt của bạn.', 'info');
+                return;
+            }
+            try {
+                deferredPwaInstallPrompt.prompt();
+                const { outcome } = await deferredPwaInstallPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    closeModal('modal-install-pwa-guide');
+                }
+                deferredPwaInstallPrompt = null;
+            } catch (err) {
+                console.warn('PWA prompt error:', err);
             }
         }
 
