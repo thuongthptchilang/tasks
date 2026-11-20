@@ -109,21 +109,6 @@
         </div>
     </div>
 
-    <!-- BANNER CẢNH BÁO CHƯA CẤU HÌNH SUPABASE -->
-    <div id="config-warning-banner" class="hidden bg-amber-50 border-b border-amber-300 px-4 py-3 text-amber-900 text-xs sm:text-sm">
-        <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-            <div class="flex items-center gap-2.5">
-                <i class="fa-solid fa-triangle-exclamation text-amber-600 text-base"></i>
-                <span>
-                    <strong>Chưa cấu hình kết nối Supabase:</strong> Bạn có thể mở file <code>index.html</code> để điền <code>SUPABASE_URL</code> & <code>SUPABASE_ANON_KEY</code> hoặc bấm nút bên cạnh để nhập nhanh trên trình duyệt.
-                </span>
-            </div>
-            <button onclick="openQuickConfigModal()" class="shrink-0 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg text-xs transition">
-                <i class="fa-solid fa-plug mr-1"></i> Cấu hình kết nối
-            </button>
-        </div>
-    </div>
-
     <!-- =====================================================================
          GUEST MODE & LOGIN VIEW (KHI CHƯA ĐĂNG NHẬP)
     ====================================================================== -->
@@ -139,9 +124,6 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
-                    <button onclick="openQuickConfigModal()" class="p-2 text-slate-500 hover:text-blue-700 rounded-lg hover:bg-slate-100 transition" title="Cấu hình Supabase URL / Anon Key">
-                        <i class="fa-solid fa-gear"></i>
-                    </button>
                     <button onclick="focusLoginBox()" class="px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition">
                         <i class="fa-solid fa-right-to-bracket mr-1.5"></i> Đăng nhập
                     </button>
@@ -1064,8 +1046,8 @@
                             <button type="button" onclick="handleSendTestPushNotification()" class="px-3.5 py-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold transition">
                                 <i class="fa-solid fa-paper-plane mr-1"></i> Gửi thử thông báo đẩy
                             </button>
-                            <button type="button" onclick="openQuickConfigModal()" class="px-3.5 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-xs font-semibold text-slate-700">
-                                <i class="fa-solid fa-database mr-1.5"></i> Kiểm tra cấu hình Supabase
+                            <button id="btn-admin-supabase-config" type="button" onclick="openQuickConfigModal()" class="hidden px-3.5 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-xs font-semibold text-slate-700">
+                                <i class="fa-solid fa-database mr-1.5"></i> Cấu hình kết nối Supabase (Chỉ Admin)
                             </button>
                         </div>
                     </div>
@@ -2005,8 +1987,7 @@
         async function handleLoginSubmit(event) {
             event.preventDefault();
             if (!supabaseClient) {
-                openQuickConfigModal();
-                showToast('Vui lòng cấu hình SUPABASE_URL và SUPABASE_ANON_KEY trước khi đăng nhập.', 'warning');
+                showAuthAlert('Hệ thống chưa được Quản trị viên cấu hình kết nối máy chủ.', 'warning');
                 return;
             }
 
@@ -2041,7 +2022,7 @@
 
         async function handleForgotPassword() {
             if (!supabaseClient) {
-                openQuickConfigModal();
+                showAuthAlert('Hệ thống chưa được Quản trị viên cấu hình kết nối máy chủ.', 'warning');
                 return;
             }
             const email = document.getElementById('login-email').value.trim();
@@ -2069,7 +2050,7 @@
 
         function openRegisterTeacherModal() {
             if (!supabaseClient) {
-                openQuickConfigModal();
+                showAuthAlert('Hệ thống chưa được Quản trị viên cấu hình kết nối máy chủ.', 'warning');
                 return;
             }
             document.getElementById('register-teacher-form').reset();
@@ -4251,6 +4232,8 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
                 document.getElementById(id).disabled = !canEdit;
             });
             document.getElementById('settings-admin-actions').classList.toggle('hidden', !canEdit);
+            const btnSupCfg = document.getElementById('btn-admin-supabase-config');
+            if (btnSupCfg) btnSupCfg.classList.toggle('hidden', !canEdit);
 
             // V2: Cập nhật trạng thái Web Push & Service Worker
             updateWebPushSettingsUI();
@@ -4837,6 +4820,10 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
         }
 
         function openQuickConfigModal() {
+            if (!AppState.profile || !isAdminOrBGH()) {
+                showToast('Chỉ Quản trị viên (Admin / BGH) mới có quyền truy cập cấu hình kết nối hệ thống.', 'error');
+                return;
+            }
             const { url, key } = getEffectiveSupabaseConfig();
             document.getElementById('cfg-supabase-url').value = url || '';
             document.getElementById('cfg-supabase-anon-key').value = key || '';
