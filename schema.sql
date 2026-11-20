@@ -1131,7 +1131,7 @@ VALUES
     ('Đoàn Thanh niên', 'DOAN_TN', 'Ban chấp hành Đoàn TNCS Hồ Chí Minh Trường THPT Chi Lăng', TRUE),
     ('Tổ Toán - Hóa - Sinh', 'TO_THS', 'Tổ chuyên môn Toán học, Hóa học, Sinh học', TRUE),
     ('Tổ Lý - Tin - CN - TD - QPAN', 'TO_LTCTQ', 'Tổ chuyên môn Vật lý, Tin học, Công nghệ, Thể dục, QPAN', TRUE),
-    ('Tổ Công nghệ', 'TO_CONG_NGHE', 'Bộ phận / Tổ Công nghệ & Chuyển đổi số nhà trường', TRUE),
+    ('Ban UDCNTT', 'BAN_UDCNTT', 'Ban Ứng dụng Công nghệ thông tin & Chuyển đổi số nhà trường', TRUE),
     ('Tổ Văn - Sử', 'TO_VS', 'Tổ chuyên môn Ngữ văn, Lịch sử', TRUE),
     ('Tổ Anh - Địa - KTPL', 'TO_ADK', 'Tổ chuyên môn Tiếng Anh, Địa lý, Kinh tế & Pháp luật', TRUE),
     ('Tổ Văn phòng', 'TO_VP', 'Tổ Hành chính - Văn thư - Y tế - Thư viện - Bảo vệ', TRUE)
@@ -1486,3 +1486,47 @@ BEGIN
         END;
     END IF;
 END$$;
+
+-- =============================================================================
+-- 13. CẤP QUYỀN TRUY CẬP DATABASE (GRANTS) & ĐỒNG BỘ PROFILES TỪ AUTH.USERS
+-- (Khắc phục triệt để lỗi "permission denied for table profiles")
+-- =============================================================================
+
+-- 13.1. Cấp quyền sử dụng schema và quyền thao tác trên các bảng cho role `anon` và `authenticated`
+-- (RLS Policies vẫn kiểm soát 100% dòng dữ liệu nào được phép xem/sửa/xóa)
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated;
+GRANT SELECT ON TABLE public.school_settings TO anon;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO anon, authenticated;
+
+-- Đảm bảo các bảng tạo thêm về sau trong schema public cũng tự động có GRANT cho authenticated
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT EXECUTE ON FUNCTIONS TO authenticated;
+
+-- 13.2. Tự động đồng bộ các tài khoản đã được tạo sẵn trong `auth.users` sang `public.profiles`
+INSERT INTO public.profiles (id, full_name, email, role, department_id, position, is_active)
+SELECT
+    u.id,
+    COALESCE(u.raw_user_meta_data->>'full_name', split_part(COALESCE(u.email, 'Admin'), '@', 1)),
+    u.email,
+    CASE
+        WHEN u.email ILIKE 'admin@%' THEN 'super_admin'::public.app_role
+        ELSE 'teacher'::public.app_role
+    END,
+    (SELECT id FROM public.departments WHERE code = 'BGH' LIMIT 1),
+    CASE
+        WHEN u.email ILIKE 'admin@%' THEN 'Quản trị hệ thống - Ban Giám Hiệu'
+        ELSE 'Giáo viên'
+    END,
+    TRUE
+FROM auth.users u
+ON CONFLICT (id) DO UPDATE
+SET
+    email = EXCLUDED.email,
+    role = CASE
+        WHEN public.profiles.email ILIKE 'admin@%' THEN 'super_admin'::public.app_role
+        ELSE public.profiles.role
+    END,
+    is_active = TRUE;
