@@ -4,14 +4,21 @@
 // "Cài đặt ứng dụng" (Install App / WebAPK) thay vì chỉ tạo lối tắt.
 // =============================================================================
 
-const CACHE_NAME = 'thpt-chilang-pwa-v2';
-const DEFAULT_ICON = 'https://raw.githubusercontent.com/truongthptchilang/tasks/main/Logocl.png';
+const CACHE_NAME = 'thpt-chilang-pwa-v3';
+const DEFAULT_ICON = './Logocl.png';
 
 self.addEventListener('install', (event) => {
     self.skipWaiting();
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
-            return cache.addAll(['./', './index.html', './manifest.json']).catch(() => {});
+            return cache.addAll([
+                './',
+                './index.html',
+                './manifest.json',
+                './Logocl.png',
+                './icon-192.png',
+                './icon-512.png'
+            ]).catch(() => {});
         })
     );
 });
