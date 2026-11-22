@@ -154,11 +154,11 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
-                    <button type="button" onclick="openInstallPwaGuideModal()" class="px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 text-xs font-bold rounded-xl transition flex items-center gap-1.5">
+                    <button id="btn-guest-install-app" type="button" onclick="openInstallPwaGuideModal()" class="px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 text-xs font-bold rounded-xl transition flex items-center gap-1.5">
                         <i class="fa-solid fa-mobile-screen-button"></i>
                         <span>Cài App</span>
                     </button>
-                    <button onclick="focusLoginBox()" class="px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition">
+                    <button onclick="focusLoginBox()" class="hidden lg:inline-flex items-center px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-xs transition">
                         <i class="fa-solid fa-right-to-bracket mr-1.5"></i> Đăng nhập
                     </button>
                 </div>
@@ -166,9 +166,9 @@
         </header>
 
         <!-- Main Guest & Login Card -->
-        <div class="max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-12 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-            <!-- Cột trái: Giới thiệu cổng điều hành (Guest Mode) -->
-            <div class="lg:col-span-7 space-y-6">
+        <div class="max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-12 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            <!-- Cột trái: Giới thiệu cổng điều hành (Chỉ hiển thị trên Máy tính lg trở lên, ẩn trên điện thoại để gọn gàng) -->
+            <div class="hidden lg:block lg:col-span-7 space-y-6">
                 <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-100/80 text-blue-800 text-xs font-semibold">
                     <i class="fa-solid fa-shield-halved"></i>
                     <span>Hệ thống thông báo & điều hành nội bộ chính thức</span>
@@ -213,8 +213,8 @@
                 </div>
             </div>
 
-            <!-- Cột phải: Khung Đăng nhập -->
-            <div class="lg:col-span-5">
+            <!-- Cột phải: Khung Đăng nhập (Trên điện thoại hiển thị gọn gàng chính giữa màn hình) -->
+            <div class="lg:col-span-5 max-w-md w-full mx-auto lg:max-w-none">
                 <div class="bg-white rounded-2xl shadow-lg border border-slate-200/90 p-6 sm:p-8">
                     <div class="flex flex-col items-center text-center mb-6">
                         <img id="login-school-logo" src="./Logocl.png" onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name=CL&background=1e40af&color=fff&size=128&bold=true';" alt="Logo" class="w-16 h-16 rounded-2xl object-contain bg-white p-1 shadow-md border-2 border-blue-100 mb-3" />
@@ -6110,19 +6110,66 @@ ${riskLines}
         // ---------------------------------------------------------------------
         // PWA MOBILE APP INSTALLER (ANDROID 1-CLICK & iOS SAFARI HOME SCREEN)
         // ---------------------------------------------------------------------
+        function isPwaAlreadyInstalled() {
+            const isStandaloneDisplay =
+                window.matchMedia('(display-mode: standalone)').matches ||
+                window.matchMedia('(display-mode: fullscreen)').matches ||
+                window.matchMedia('(display-mode: minimal-ui)').matches ||
+                window.navigator.standalone === true ||
+                document.referrer.includes('android-app://');
+
+            if (isStandaloneDisplay) {
+                try { localStorage.setItem('chilang_pwa_installed', '1'); } catch (_) {}
+                return true;
+            }
+            try {
+                if (localStorage.getItem('chilang_pwa_installed') === '1') {
+                    return true;
+                }
+            } catch (_) {}
+            return false;
+        }
+
+        function updateInstallAppButtonsVisibility() {
+            const installed = isPwaAlreadyInstalled();
+            ['btn-guest-install-app', 'btn-topbar-install-app'].forEach(id => {
+                const btn = document.getElementById(id);
+                if (!btn) return;
+                if (installed) {
+                    btn.classList.add('hidden');
+                    btn.classList.remove('flex', 'inline-flex');
+                } else {
+                    btn.classList.remove('hidden');
+                    btn.classList.add(id === 'btn-guest-install-app' ? 'flex' : 'inline-flex');
+                }
+            });
+        }
+
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPwaInstallPrompt = e;
+            // Nếu trình duyệt phát sự kiện beforeinstallprompt nghĩa là máy chưa cài App (hoặc đã gỡ cài đặt)
+            try { localStorage.removeItem('chilang_pwa_installed'); } catch (_) {}
+            updateInstallAppButtonsVisibility();
             const directBox = document.getElementById('pwa-direct-install-box');
             if (directBox) directBox.classList.remove('hidden');
         });
 
         window.addEventListener('appinstalled', () => {
             deferredPwaInstallPrompt = null;
+            try { localStorage.setItem('chilang_pwa_installed', '1'); } catch (_) {}
+            updateInstallAppButtonsVisibility();
             const directBox = document.getElementById('pwa-direct-install-box');
             if (directBox) directBox.classList.add('hidden');
+            closeModal('modal-install-pwa-guide');
             showToast('Đã cài đặt Ứng dụng Cổng Điều Hành THPT Chi Lăng vào thiết bị!', 'success');
         });
+
+        try {
+            window.matchMedia('(display-mode: standalone)').addEventListener('change', () => {
+                updateInstallAppButtonsVisibility();
+            });
+        } catch (_) {}
 
         function openInstallPwaGuideModal() {
             const directBox = document.getElementById('pwa-direct-install-box');
@@ -6141,6 +6188,8 @@ ${riskLines}
                 deferredPwaInstallPrompt.prompt();
                 const { outcome } = await deferredPwaInstallPrompt.userChoice;
                 if (outcome === 'accepted') {
+                    try { localStorage.setItem('chilang_pwa_installed', '1'); } catch (_) {}
+                    updateInstallAppButtonsVisibility();
                     closeModal('modal-install-pwa-guide');
                 }
                 deferredPwaInstallPrompt = null;
@@ -6178,6 +6227,7 @@ ${riskLines}
             if (loginForm) {
                 loginForm.addEventListener('submit', handleLoginSubmit);
             }
+            updateInstallAppButtonsVisibility();
             initPwaServiceWorker();
             bootstrapApplication();
         });
