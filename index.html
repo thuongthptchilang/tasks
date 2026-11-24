@@ -344,11 +344,11 @@
                         </button>
                     </form>
 
-                    <!-- Đăng ký tài khoản giáo viên mới (Mặc định role = teacher) -->
+                    <!-- Chính sách bảo mật tài khoản nội bộ (Đã loại bỏ tính năng tự đăng ký công khai) -->
                     <div class="mt-5 pt-4 border-t border-slate-100 text-center">
-                        <p class="text-xs text-slate-500">
-                            Chưa có tài khoản trên cổng?
-                            <button type="button" onclick="openRegisterTeacherModal()" class="text-blue-700 font-semibold hover:underline ml-1">Đăng ký tài khoản Giáo viên</button>
+                        <p class="text-[11px] text-slate-500 flex items-center justify-center gap-1.5 leading-relaxed">
+                            <i class="fa-solid fa-user-shield text-blue-700 shrink-0"></i>
+                            <span>Tài khoản nội bộ do Quản trị viên nhà trường cấp từ danh sách chính thức.</span>
                         </p>
                     </div>
                 </div>
@@ -777,12 +777,18 @@
                                 </div>
                                 <div>
                                     <h3 class="text-sm sm:text-base font-extrabold">🤖 TRỢ LÝ AI NHÀ TRƯỜNG - THPT CHI LĂNG</h3>
-                                    <p class="text-[11px] text-blue-200">Chỉ phân tích & trả lời trong phạm vi dữ liệu thông báo và công việc bạn được quyền xem</p>
+                                    <p class="text-[11px] text-blue-200">Chỉ phân tích thông báo & công việc công vụ theo quyền RLS • Đã bật lá chắn bảo vệ dữ liệu cá nhân & bí mật nội bộ</p>
                                 </div>
                             </div>
                             <button type="button" onclick="clearAiConversation()" class="self-start sm:self-auto px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs font-semibold">
                                 <i class="fa-solid fa-trash-can mr-1"></i> Xóa hội thoại
                             </button>
+                        </div>
+
+                        <!-- Thanh trạng thái Lá chắn Bảo mật Dữ liệu AI (PII & Confidential Filter) -->
+                        <div class="px-4 py-2 bg-emerald-50 border-b border-emerald-200/80 text-[11px] text-emerald-900 flex items-center gap-2">
+                            <i class="fa-solid fa-shield-halved text-emerald-700 shrink-0"></i>
+                            <span><strong>Chế độ Bảo mật AI Nội bộ:</strong> Hệ thống tự động loại bỏ thông tin cá nhân (SĐT, Email, CCCD, Tài khoản, Lương), tệp đính kèm mật, đề thi và văn bản nhạy cảm khỏi dữ liệu gửi tới AI.</span>
                         </div>
 
                         <!-- Gợi ý câu hỏi mẫu -->
@@ -1690,40 +1696,7 @@
         </div>
     </div>
 
-    <!-- MODAL 6: ĐĂNG KÝ TÀI KHOẢN GIÁO VIÊN MỚI (NGOÀI MÀN HÌNH ĐĂNG NHẬP) -->
-    <div id="modal-register-teacher" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden">
-            <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-                <h3 class="text-base font-extrabold text-slate-900">📝 Đăng ký tài khoản Giáo viên</h3>
-                <button type="button" onclick="closeModal('modal-register-teacher')" class="text-slate-400 hover:text-slate-700">
-                    <i class="fa-solid fa-xmark text-lg"></i>
-                </button>
-            </div>
-            <form id="register-teacher-form" onsubmit="handleRegisterTeacher(event)" class="p-5 space-y-3.5">
-                <p class="text-xs text-slate-500">Tài khoản đăng ký mới sẽ mặc định ở vai trò <strong>Giáo viên</strong>. Ban Giám Hiệu hoặc Quản trị viên sẽ gán tổ chuyên môn và phân quyền bổ sung sau.</p>
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Họ và tên <span class="text-red-600">*</span></label>
-                    <input id="reg-fullname" type="text" required placeholder="Nguyễn Văn A" class="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300 outline-none" />
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Email công vụ <span class="text-red-600">*</span></label>
-                    <input id="reg-email" type="email" required placeholder="giaovien@thptchilang.edu.vn" class="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300 outline-none" />
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Số điện thoại</label>
-                    <input id="reg-phone" type="text" placeholder="09xxxxxxxx" class="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300 outline-none" />
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Mật khẩu (Tối thiểu 6 ký tự) <span class="text-red-600">*</span></label>
-                    <input id="reg-password" type="password" minlength="6" required class="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300 outline-none" />
-                </div>
-                <div class="pt-2 flex justify-end gap-2">
-                    <button type="button" onclick="closeModal('modal-register-teacher')" class="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold">Hủy</button>
-                    <button type="submit" class="px-5 py-2 rounded-xl bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold">Đăng ký tài khoản</button>
-                </div>
-            </form>
-        </div>
-    </div>
+    <!-- (Đã gỡ bỏ Modal tự đăng ký tài khoản ở trang đăng nhập để bảo mật nội bộ; tài khoản chỉ do Admin tạo hoặc nhập từ file Excel của nhà trường) -->
 
     <!-- MODAL 7: CẤU HÌNH NHANH SUPABASE URL & ANON KEY (DÀNH CHO TRIỂN KHAI / TEST NHANH) -->
     <div id="modal-quick-config" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center p-4">
@@ -2359,53 +2332,15 @@
             }
         }
 
+        // Đã vô hiệu hóa hoàn toàn tính năng tự đăng ký tài khoản ngoài trang đăng nhập để đảm bảo an toàn nội bộ.
+        // Tài khoản cán bộ, giáo viên chỉ được khởi tạo bởi Quản trị viên hoặc nhập từ file Excel của nhà trường.
         function openRegisterTeacherModal() {
-            if (!supabaseClient) {
-                showAuthAlert('Hệ thống chưa được Quản trị viên cấu hình kết nối máy chủ.', 'warning');
-                return;
-            }
-            document.getElementById('register-teacher-form').reset();
-            openModal('modal-register-teacher');
+            showToast('Chức năng tự đăng ký đã được đóng để bảo mật. Vui lòng liên hệ Quản trị viên nhà trường để được cấp tài khoản.', 'warning');
         }
 
         async function handleRegisterTeacher(event) {
-            event.preventDefault();
-            if (!supabaseClient) return;
-
-            const fullName = document.getElementById('reg-fullname').value.trim();
-            const email = document.getElementById('reg-email').value.trim();
-            const phone = document.getElementById('reg-phone').value.trim();
-            const password = document.getElementById('reg-password').value;
-
-            setGlobalLoading(true, 'Đang đăng ký tài khoản...');
-            try {
-                const { data, error } = await supabaseClient.auth.signUp({
-                    email,
-                    password,
-                    options: {
-                        data: {
-                            full_name: fullName,
-                            phone: phone,
-                            position: 'Giáo viên'
-                        }
-                    }
-                });
-                if (error) throw error;
-
-                closeModal('modal-register-teacher');
-                if (data?.session) {
-                    showToast('Đăng ký và đăng nhập thành công!', 'success');
-                    await onUserAuthenticated(data.session);
-                } else {
-                    showAuthAlert('Đăng ký thành công! Vui lòng kiểm tra email xác nhận (nếu dự án bật Confirm Email) hoặc đăng nhập ngay.', 'success');
-                    showToast('Đăng ký tài khoản thành công!', 'success');
-                }
-            } catch (err) {
-                console.error('Lỗi đăng ký:', err);
-                showToast('Không thể đăng ký tài khoản: ' + (err.message || 'Vui lòng thử lại'), 'error');
-            } finally {
-                setGlobalLoading(false);
-            }
+            if (event) event.preventDefault();
+            showToast('Chức năng tự đăng ký đã được đóng để bảo mật nội bộ.', 'error');
         }
 
         async function handleLogout() {
@@ -3966,16 +3901,80 @@ Hạn thực hiện: ${deadlineStr}
         ====================================================================== */
 
         const AI_SYSTEM_PROMPT = `Bạn là Trợ lý điều hành của THPT Chi Lăng.
-Bạn chỉ được sử dụng dữ liệu được cung cấp trong context.
-Không được tự bịa thông tin.
-Nếu dữ liệu không có, hãy nói rõ rằng hệ thống chưa có dữ liệu.
-Không được tiết lộ thông tin của người dùng khác nếu người dùng hiện tại không có quyền xem.
-Trả lời bằng tiếng Việt.
-Trả lời rõ ràng, có cấu trúc.
-Nếu có deadline, luôn hiển thị ngày giờ cụ thể.
-Nếu có nhiều công việc, sử dụng danh sách.
-Ưu tiên công việc quá hạn và sắp đến hạn.
-Không trả lời vượt quá dữ liệu được cung cấp.`;
+Bạn chỉ được sử dụng dữ liệu công vụ đã qua ẩn danh được cung cấp trong context.
+TUYỆT ĐỐI KHÔNG sử dụng, suy đoán, lưu trữ hoặc tiết lộ:
+1. Dữ liệu cá nhân (Họ tên riêng tư, Số điện thoại, Email, CCCD/CMND, Địa chỉ nhà, Tài khoản ngân hàng, Bảng lương/Thu nhập, Mật khẩu).
+2. Bí mật nội bộ nhà trường (Đề thi, Đáp án chưa công bố, Hồ sơ kỷ luật, Khiếu nại/Tố cáo, Văn bản đóng dấu MẬT hoặc gửi riêng cá nhân).
+Nếu người dùng hỏi các thông tin nhạy cảm hoặc bí mật nội bộ trên, hãy từ chối lịch sự theo Quy chế Bảo mật của Trường THPT Chi Lăng.
+Trả lời bằng tiếng Việt rõ ràng, có cấu trúc, ưu tiên công việc quá hạn và sắp đến hạn.`;
+
+        // Danh mục từ khóa nhận diện văn bản Mật / Nhạy cảm / Bí mật nội bộ không được phép gửi lên Cloud AI
+        const CONFIDENTIAL_CONTENT_REGEX = /(\[mật\]|\[nội bộ mật\]|văn bản mật|tài liệu mật|bí mật nội bộ|đề thi chính thức|đề thi mật|đáp án đề thi|hồ sơ kỷ luật|xử lý kỷ luật|đơn tố cáo|đơn khiếu nại|bảng lương|thu nhập cá nhân|số tài khoản ngân hàng|mật khẩu|password|secret_key|service_role)/i;
+
+        // Danh mục câu hỏi truy vấn dữ liệu cá nhân (PII) hoặc bí mật nội bộ cần chặn ngay tại trình duyệt
+        const PRIVACY_VIOLATION_QUERY_REGEX = /(số điện thoại của|sđt của|email của|mật khẩu của|password của|cccd của|cmnd của|căn cước của|số tài khoản của|stk của|lương của|thu nhập của|đề thi mật|đáp án đề thi|hồ sơ kỷ luật của|đơn tố cáo)/i;
+
+        // Hàm tự động che (Mask/Redact) mọi dữ liệu cá nhân (SĐT, Email, CCCD, Số tài khoản, Link file) trong văn bản trước khi gửi AI
+        function redactSensitiveDataForAi(rawText) {
+            if (!rawText) return '';
+            return String(rawText)
+                // Ẩn địa chỉ Email
+                .replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[EMAIL ĐÃ ẨN]')
+                // Ẩn số điện thoại Việt Nam (03, 05, 07, 08, 09, +84)
+                .replace(/(?:\+84|0)(?:3|5|7|8|9)\d{8}\b/g, '[SĐT ĐÃ ẨN]')
+                // Ẩn dãy số CCCD / CMND / Số tài khoản ngân hàng (9 - 16 chữ số liên tiếp)
+                .replace(/\b\d{9,16}\b/g, '[MÃ ĐỊNH DANH/STK ĐÃ ẨN]')
+                // Ẩn đường dẫn lưu trữ tệp nội bộ
+                .replace(/https?:\/\/[^\s)]+\/storage\/v1\/object\/[^\s)]+/gi, '[TỆP ĐÍNH KÈM NỘI BỘ ĐÃ ẨN]')
+                .slice(0, 260);
+        }
+
+        // Kiểm tra xem một Thông báo hoặc Công việc có phải là tin Mật / Nhạy cảm / Riêng tư cá nhân hay không
+        function isConfidentialSchoolItem(item) {
+            if (!item) return true;
+            // Không gửi các thông báo chỉ định riêng cho từng cá nhân (selected) lên Cloud AI
+            if (item.target_type === 'selected') return true;
+            const combined = `${item.title || ''} ${item.summary || ''} ${item.content || ''} ${item.description || ''} ${item.category || ''}`;
+            return CONFIDENTIAL_CONTENT_REGEX.test(combined);
+        }
+
+        // Xây dựng gói ngữ cảnh (Context) đã được lọc sạch 100% dữ liệu cá nhân (PII) và văn bản mật
+        function buildSanitizedAiContext() {
+            const publishedAnns = AppState.announcements
+                .filter(a => a.is_published && !isConfidentialSchoolItem(a))
+                .slice(0, 15)
+                .map(a => ({
+                    title: redactSensitiveDataForAi(a.title),
+                    department: getDepartmentName(a.department_id),
+                    priority: PRIORITY_META[a.priority]?.label || 'THÔNG THƯỜNG',
+                    publish_at: formatDateTimeVN(a.publish_at),
+                    deadline: a.deadline ? formatDateTimeVN(a.deadline) : null,
+                    is_read: isAnnouncementReadByMe(a.id),
+                    summary: redactSensitiveDataForAi(a.summary || a.content || '')
+                }));
+
+            const myTasks = AppState.tasks
+                .filter(t => (Boolean(getMyTaskAssignment(t.id)) || t.created_by === AppState.profile?.id) && !isConfidentialSchoolItem(t))
+                .slice(0, 15)
+                .map(t => ({
+                    title: redactSensitiveDataForAi(t.title),
+                    department: getDepartmentName(t.department_id),
+                    priority: PRIORITY_META[t.priority]?.label || 'THÔNG THƯỜNG',
+                    deadline: t.deadline ? formatDateTimeVN(t.deadline) : null,
+                    status: TASK_STATUS_META[getEffectiveTaskStatus(t, getMyTaskAssignment(t.id))]?.label || 'Đang xử lý',
+                    description: redactSensitiveDataForAi(t.description || '')
+                }));
+
+            return {
+                user: {
+                    role: ROLE_LABELS[AppState.profile?.role] || 'GIÁO VIÊN',
+                    department: getUserDepartmentsDisplay(AppState.profile)
+                    // Tuyệt đối không gửi full_name, email, phone, id của giáo viên lên Cloud AI
+                },
+                announcements: publishedAnns,
+                tasks: myTasks
+            };
+        }
 
         function initAiWelcomeMessage() {
             const box = document.getElementById('ai-chat-messages');
@@ -4036,20 +4035,32 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
             btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i>';
 
             try {
-                let answerText = null;
+                // 0. Kiểm tra Lá chắn Bảo mật Dữ liệu Cá nhân & Bí mật Nội bộ ngay tại trình duyệt
+                if (PRIVACY_VIOLATION_QUERY_REGEX.test(question) || CONFIDENTIAL_CONTENT_REGEX.test(question)) {
+                    appendAiMessage(
+                        'assistant',
+                        '🛡️ **Thông báo Bảo mật Nội bộ THPT Chi Lăng:**\n\nTheo quy định bảo vệ dữ liệu cá nhân và bí mật nhà trường, hệ thống AI **không truy cập và không cung cấp** các thông tin nhạy cảm (Số điện thoại, Email cá nhân, CCCD, Tài khoản ngân hàng, Lương/Thu nhập, Mật khẩu, Đề thi mật, Hồ sơ kỷ luật hoặc Văn bản mật).'
+                    );
+                    return;
+                }
 
-                // 1. Gọi Supabase Edge Function: `ai-school-assistant`
-                // Edge Function nhận JWT của user hiện tại từ header Authorization tự động của Supabase JS
+                let answerText = null;
+                const sanitizedContext = buildSanitizedAiContext();
+                const safeQuestion = redactSensitiveDataForAi(question);
+
+                // 1. Gọi Supabase Edge Function: `ai-school-assistant` với dữ liệu đã được ẩn danh & lọc bỏ văn bản mật
                 if (supabaseClient) {
                     try {
                         const { data, error } = await supabaseClient.functions.invoke('ai-school-assistant', {
                             body: {
-                                question,
+                                query: safeQuestion,
+                                question: safeQuestion,
+                                context: sanitizedContext,
                                 system_prompt: AI_SYSTEM_PROMPT
                             }
                         });
-                        if (!error && data?.answer) {
-                            answerText = data.answer;
+                        if (!error && (data?.answer || data?.reply)) {
+                            answerText = data.answer || data.reply;
                         }
                     } catch (_) {
                         // Nếu Edge Function `ai-school-assistant` chưa được deploy lên Supabase Cloud,
@@ -4057,7 +4068,7 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
                     }
                 }
 
-                // 2. Fallback phân tích ngữ cảnh thực tế từ dữ liệu RLS của user hiện tại (Đảm bảo 100% không bịa thông tin)
+                // 2. Fallback phân tích ngữ cảnh thực tế từ dữ liệu RLS của user hiện tại (Đảm bảo 100% không bịa thông tin & không lộ tin mật)
                 if (!answerText) {
                     answerText = generateStrictRlsContextAnswer(question);
                 }
@@ -4081,11 +4092,11 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
             endOfWeek.setDate(endOfWeek.getDate() + 6);
             endOfWeek.setHours(23, 59, 59, 999);
 
-            const publishedAnns = AppState.announcements.filter(a => a.is_published);
+            const publishedAnns = AppState.announcements.filter(a => a.is_published && !isConfidentialSchoolItem(a));
             const unreadAnns = publishedAnns.filter(a => !isAnnouncementReadByMe(a.id));
 
-            // Các công việc của user hiện tại
-            const myTasks = AppState.tasks.filter(t => Boolean(getMyTaskAssignment(t.id)) || t.created_by === AppState.profile?.id);
+            // Các công việc của user hiện tại (Đã loại bỏ các công việc/văn bản mật)
+            const myTasks = AppState.tasks.filter(t => (Boolean(getMyTaskAssignment(t.id)) || t.created_by === AppState.profile?.id) && !isConfidentialSchoolItem(t));
             const pendingTasks = myTasks.filter(t => {
                 const st = getEffectiveTaskStatus(t, getMyTaskAssignment(t.id));
                 return st !== 'completed' && st !== 'cancelled';
@@ -4121,7 +4132,7 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
                 }
                 const lines = gvcnAnns.map((a, idx) => {
                     const dl = a.deadline ? ` — Hạn thực hiện: **${formatDateTimeVN(a.deadline)}**` : '';
-                    return `${idx + 1}. **${a.title}** (${getDepartmentName(a.department_id)})${dl}\n   - Tóm tắt: ${a.content.slice(0, 140)}...`;
+                    return `${idx + 1}. **${redactSensitiveDataForAi(a.title)}** (${getDepartmentName(a.department_id)})${dl}\n   - Tóm tắt: ${redactSensitiveDataForAi(a.content).slice(0, 140)}...`;
                 });
                 return `Có **${gvcnAnns.length} thông báo liên quan đến công tác GVCN / Học sinh**:\n\n${lines.join('\n')}`;
             }
@@ -4131,11 +4142,11 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
                 const bghDept = AppState.departments.find(d => d.code === 'BGH');
                 const bghAnns = publishedAnns.filter(a => !bghDept || a.department_id === bghDept.id);
                 if (bghAnns.length === 0) {
-                    return 'Hệ thống chưa có dữ liệu thông báo từ Ban Giám Hiệu trong phạm vi dữ liệu hiện tại.';
+                    return 'Hệ thống chưa có dữ liệu thông báo từ Ban Giám Hiệu trong phạm vi dữ liệu công khai hiện tại.';
                 }
                 const lines = bghAnns.slice(0, 8).map((a, idx) => {
                     const dl = a.deadline ? ` | Hạn: **${formatDateTimeVN(a.deadline)}**` : '';
-                    return `${idx + 1}. **${a.title}** (Đăng: ${formatDateTimeVN(a.publish_at)}${dl})\n   - Nội dung chính: ${a.content.replace(/\s+/g, ' ').slice(0, 160)}...`;
+                    return `${idx + 1}. **${redactSensitiveDataForAi(a.title)}** (Đăng: ${formatDateTimeVN(a.publish_at)}${dl})\n   - Nội dung chính: ${redactSensitiveDataForAi(a.content.replace(/\s+/g, ' ')).slice(0, 160)}...`;
                 });
                 return `**Tóm tắt các thông báo của Ban Giám Hiệu (${bghAnns.length} thông báo):**\n\n${lines.join('\n')}`;
             }
@@ -6405,21 +6416,30 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
 
                 let aiReportText = null;
 
-                // Thử gọi Edge Function `ai-school-assistant` với chế độ báo cáo BGH nếu đã deploy
+                // Thử gọi Edge Function `ai-school-assistant` với chế độ báo cáo BGH (Chỉ gửi số liệu thống kê ẩn danh theo Tổ, KHÔNG gửi tên cá nhân hay nội dung mật)
                 if (supabaseClient) {
                     try {
-                        const summaryPrompt = `Hãy phân tích số liệu điều hành toàn trường cho Ban Giám Hiệu THPT Chi Lăng:
+                        const safeRiskTitles = atRiskItems
+                            .filter(i => !CONFIDENTIAL_CONTENT_REGEX.test(i.title))
+                            .map(i => redactSensitiveDataForAi(i.title))
+                            .join('; ');
+                        const summaryPrompt = `Hãy phân tích số liệu thống kê điều hành ẩn danh cho Ban Giám Hiệu THPT Chi Lăng:
 - Tổ dẫn đầu: ${bestDept ? `${bestDept.name} (${bestDept.overallScore}%)` : 'Chưa có'}
 - Tổ cần cải thiện: ${lowestDept ? `${lowestDept.name} (${lowestDept.overallScore}%)` : 'Chưa có'}
-- Số đầu việc quá hạn hoặc nguy cơ trễ hạn: ${atRiskItems.length} (${atRiskItems.map(i => i.title).join('; ')})
-- Số giáo viên còn tồn đọng thông báo/công việc: ${teacherBottlenecks.length}
+- Số đầu việc công vụ quá hạn hoặc nguy cơ trễ hạn: ${atRiskItems.length} (${safeRiskTitles || 'Các công việc chuyên môn'})
+- Số lượng nhân sự còn tồn đọng thông báo/công việc: ${teacherBottlenecks.length} người (đã ẩn danh tính cá nhân).
 Hãy đưa ra nhận xét ngắn gọn và 3 kiến nghị điều hành cụ thể cho Hiệu trưởng.`;
 
                         const { data, error } = await supabaseClient.functions.invoke('ai-school-assistant', {
-                            body: { question: summaryPrompt, system_prompt: AI_SYSTEM_PROMPT }
+                            body: {
+                                query: summaryPrompt,
+                                question: summaryPrompt,
+                                context: { role: 'BGH', mode: 'anonymous_aggregate_analytics' },
+                                system_prompt: AI_SYSTEM_PROMPT
+                            }
                         });
-                        if (!error && data?.answer) {
-                            aiReportText = data.answer;
+                        if (!error && (data?.answer || data?.reply)) {
+                            aiReportText = data.answer || data.reply;
                         }
                     } catch (_) {}
                 }
