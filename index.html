@@ -141,55 +141,78 @@
     <!-- TOAST CONTAINER -->
     <div id="toast-container" class="fixed top-4 right-4 z-[100] flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
 
-    <!-- POPUP NỔI THÔNG BÁO MỚI TRÊN MÀN HÌNH ĐIỆN THOẠI / WEB APP (HEADS-UP FLOATING POPUP) -->
-    <div id="floating-announcement-popup" class="fixed top-3 inset-x-3 sm:left-auto sm:right-5 sm:w-[400px] z-[95] hidden pt-safe pointer-events-auto">
-        <div id="floating-popup-card" class="animate-floating-popup bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border-2 border-blue-600 overflow-hidden">
-            <!-- Thanh tiêu đề Popup nổi -->
-            <div id="floating-popup-header" class="px-4 py-2.5 bg-gradient-to-r from-blue-800 to-indigo-800 text-white flex items-center justify-between gap-2">
-                <div class="flex items-center gap-2 min-w-0">
-                    <img src="./Logocl.png" onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name=CL&background=1e40af&color=fff&size=128&bold=true';" alt="Logo" class="w-6 h-6 rounded-lg bg-white p-0.5 object-contain shrink-0" />
-                    <span id="floating-popup-badge" class="px-2 py-0.5 rounded-md bg-white/20 text-[10px] font-extrabold uppercase tracking-wider shrink-0">THÔNG BÁO MỚI</span>
-                    <span id="floating-popup-counter" class="text-[11px] text-blue-100 font-semibold truncate"></span>
+    <!-- POPUP NỔI THÔNG BÁO MỚI KIỂU BANNER HIỆN ĐẠI TRÊN ĐIỆN THOẠI / WEB APP (HEADS-UP FLOATING BANNER) -->
+    <div id="floating-announcement-popup" class="fixed top-2.5 inset-x-3 sm:left-auto sm:right-5 sm:w-[420px] z-[95] hidden pt-safe pointer-events-auto select-none">
+        <div id="floating-popup-card"
+             ontouchstart="handleFloatingPopupTouchStart(event)"
+             ontouchmove="handleFloatingPopupTouchMove(event)"
+             ontouchend="handleFloatingPopupTouchEnd(event)"
+             class="animate-floating-popup bg-white/95 backdrop-blur-xl rounded-3xl shadow-[0_20px_50px_rgba(15,23,42,0.28)] border border-slate-200/90 ring-2 ring-blue-600/80 overflow-hidden transition-transform duration-150">
+
+            <!-- Vùng chạm mở nhanh nội dung thông báo (Giống banner tin nhắn trên điện thoại) -->
+            <div class="p-3.5 sm:p-4 flex items-start gap-3.5 cursor-pointer active:bg-slate-50/80 transition" onclick="openCurrentFloatingPopupItem()">
+                <!-- Avatar / Logo Trường kèm chấm trạng thái động -->
+                <div class="relative shrink-0 mt-0.5">
+                    <img src="./Logocl.png" onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name=CL&background=1e40af&color=fff&size=128&bold=true';" alt="Logo THPT Chi Lăng" class="w-12 h-12 rounded-2xl bg-white p-1 object-contain shadow-md border border-blue-100" />
+                    <span id="floating-popup-status-dot" class=" -top-1 -right-1 absolute w-3.5 h-3.5 rounded-full bg-blue-600 ring-2 ring-white animate-pulse"></span>
                 </div>
-                <button type="button" onclick="dismissFloatingAnnouncementPopup()" class="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition shrink-0" title="Đóng popup">
-                    <i class="fa-solid fa-xmark text-sm"></i>
+
+                <!-- Nội dung chính của Banner thông báo -->
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between gap-1.5">
+                        <div class="flex items-center gap-1.5 min-w-0">
+                            <span id="floating-popup-badge" class="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-extrabold uppercase tracking-wider shrink-0">🔔 TIN MỚI</span>
+                            <span id="floating-popup-meta" class="text-[11px] font-bold text-slate-600 truncate">Ban Giám Hiệu</span>
+                        </div>
+                        <span id="floating-popup-counter" class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 shrink-0">Vừa xong</span>
+                    </div>
+
+                    <h4 id="floating-popup-title" class="text-sm font-extrabold text-slate-900 leading-snug line-clamp-1 mt-1">Tiêu đề thông báo</h4>
+                    <p id="floating-popup-summary" class="text-xs text-slate-600 leading-relaxed line-clamp-2 mt-0.5"></p>
+
+                    <div id="floating-popup-deadline" class="hidden mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-red-50 text-red-700 border border-red-200/80 text-[10px] font-bold"></div>
+                </div>
+
+                <!-- Nút đóng nhanh góc phải -->
+                <button type="button" onclick="event.stopPropagation(); dismissFloatingAnnouncementPopup();" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition shrink-0 -mr-1 -mt-1" title="Đóng thông báo nổi">
+                    <i class="fa-solid fa-xmark text-xs"></i>
                 </button>
             </div>
 
-            <!-- Nội dung tóm tắt tin thông báo -->
-            <div class="p-4 space-y-2.5">
-                <div class="flex items-start justify-between gap-2">
-                    <h4 id="floating-popup-title" class="text-sm font-extrabold text-slate-900 leading-snug line-clamp-2">Tiêu đề thông báo</h4>
-                </div>
-                <p id="floating-popup-summary" class="text-xs text-slate-600 leading-relaxed line-clamp-2"></p>
-                <div class="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px] text-slate-500">
-                    <span id="floating-popup-meta" class="font-medium truncate"><i class="fa-regular fa-building mr-1 text-blue-600"></i>Ban Giám Hiệu</span>
-                    <span id="floating-popup-deadline" class="font-bold text-red-600 hidden"></span>
-                </div>
+            <!-- Nút nhắc bật quyền thông báo hệ thống ngoài màn hình khóa điện thoại (nếu chưa cấp quyền) -->
+            <div id="floating-popup-enable-os-push" class="hidden px-3.5 pb-2">
+                <button type="button" onclick="enableOsPushFromFloatingPopup()" class="w-full py-1.5 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 text-[11px] font-bold flex items-center justify-center gap-1.5 transition">
+                    <i class="fa-solid fa-bell text-amber-600"></i>
+                    <span>Chạm để bật thông báo nổi cả khi khóa màn hình điện thoại</span>
+                </button>
+            </div>
 
-                <!-- Nút nhắc bật quyền thông báo hệ thống trên màn hình khóa điện thoại (nếu chưa cấp quyền) -->
-                <div id="floating-popup-enable-os-push" class="hidden pt-1">
-                    <button type="button" onclick="enableOsPushFromFloatingPopup()" class="w-full py-1.5 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 text-[11px] font-bold flex items-center justify-center gap-1.5 transition">
-                        <i class="fa-solid fa-bell text-amber-600"></i>
-                        <span>Chạm để bật chuông báo nổi ngoài màn hình điện thoại</span>
+            <!-- Thanh nút thao tác nhanh 1 chạm -->
+            <div class="px-3.5 py-2 bg-slate-50/90 border-t border-slate-100 flex items-center justify-between gap-2">
+                <div class="flex items-center gap-1.5">
+                    <button id="floating-popup-mark-read-btn" type="button" onclick="markCurrentFloatingPopupAsRead(event)" class="px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-[11px] font-extrabold transition flex items-center gap-1">
+                        <i class="fa-solid fa-check-double"></i>
+                        <span>Đã đọc</span>
+                    </button>
+                    <button type="button" onclick="dismissFloatingAnnouncementPopup()" class="px-2.5 py-1.5 rounded-xl hover:bg-slate-200/70 text-slate-500 text-[11px] font-semibold transition">
+                        Ẩn
                     </button>
                 </div>
 
-                <!-- Các nút thao tác nhanh -->
-                <div class="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
-                    <button type="button" onclick="dismissFloatingAnnouncementPopup()" class="px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-600 text-xs font-semibold transition">
-                        Để sau
+                <div class="flex items-center gap-1.5">
+                    <button id="floating-popup-next-btn" type="button" onclick="nextFloatingAnnouncementPopup()" class="hidden px-2.5 py-1.5 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 text-[11px] font-bold transition">
+                        Tin tiếp <i class="fa-solid fa-chevron-right ml-0.5 text-[9px]"></i>
                     </button>
-                    <div class="flex items-center gap-1.5">
-                        <button id="floating-popup-next-btn" type="button" onclick="nextFloatingAnnouncementPopup()" class="hidden px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition">
-                            Tin tiếp <i class="fa-solid fa-chevron-right ml-1 text-[10px]"></i>
-                        </button>
-                        <button id="floating-popup-open-btn" type="button" onclick="openCurrentFloatingPopupItem()" class="px-4 py-2 rounded-xl bg-blue-700 hover:bg-blue-800 text-white text-xs font-extrabold shadow-sm transition flex items-center gap-1.5">
-                            <i class="fa-regular fa-eye"></i>
-                            <span>Xem ngay</span>
-                        </button>
-                    </div>
+                    <button id="floating-popup-open-btn" type="button" onclick="openCurrentFloatingPopupItem()" class="px-3.5 py-1.5 rounded-xl bg-blue-700 hover:bg-blue-800 text-white text-[11px] font-extrabold shadow-xs transition flex items-center gap-1.5">
+                        <i class="fa-regular fa-eye"></i>
+                        <span>Xem chi tiết</span>
+                    </button>
                 </div>
+            </div>
+
+            <!-- Thanh gạch vuốt lên (Swipe handle) giống thông báo điện thoại -->
+            <div class="w-full py-1 bg-slate-50/90 flex justify-center">
+                <div class="w-9 h-1 rounded-full bg-slate-300/80"></div>
             </div>
         </div>
     </div>
@@ -1161,6 +1184,26 @@
                             <div>
                                 <span class="text-slate-500 block">Số thiết bị đã liên kết:</span>
                                 <strong id="push-total-devices-label" class="text-blue-700">0 thiết bị</strong>
+                            </div>
+                        </div>
+
+                        <!-- Bộ chọn giai điệu âm báo cao cấp (Crystal Chime, Marimba, Aurora, Urgent) -->
+                        <div class="p-3.5 rounded-xl bg-blue-50/60 border border-blue-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div>
+                                <label for="select-notification-chime" class="block text-xs font-extrabold text-slate-900">🎵 Giai điệu âm báo Popup nổi trên điện thoại</label>
+                                <p class="text-[11px] text-slate-500">Hợp âm đa âm trong trẻo, sang trọng và êm tai (Tự động chuyển âm khẩn khi có chỉ đạo Khẩn)</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <select id="select-notification-chime" onchange="handleChangeNotificationChime(this.value)" class="px-3 py-2 text-xs font-bold rounded-xl border border-blue-300 bg-white text-slate-800 outline-none">
+                                    <option value="crystal">💎 Chuông Pha Lê (Crystal Harp - Hay nhất)</option>
+                                    <option value="marimba">🎶 Hợp âm Marimba Gỗ Ấm (Warm Marimba)</option>
+                                    <option value="aurora">✨ Giai điệu Sao Mai (Aurora Chime)</option>
+                                    <option value="executive">🔔 Chuông Điều Hành Đôi (Executive Bell)</option>
+                                </select>
+                                <button type="button" onclick="previewSelectedNotificationChime()" class="px-3 py-2 rounded-xl bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold shrink-0 transition flex items-center gap-1">
+                                    <i class="fa-solid fa-volume-high"></i>
+                                    <span>Nghe thử</span>
+                                </button>
                             </div>
                         </div>
 
@@ -2664,6 +2707,9 @@
                 btmTaskBadge.textContent = uncompletedMyTasks.length > 99 ? '99+' : uncompletedMyTasks.length;
                 btmTaskBadge.classList.toggle('hidden', uncompletedMyTasks.length === 0);
             }
+
+            // Đồng bộ chấm số đỏ đếm tin chưa đọc ngay trên Biểu tượng Ứng dụng ngoài màn hình chính điện thoại (App Icon Badge)
+            syncAppIconUnreadBadge(unreadAnns.length + uncompletedMyTasks.length);
 
             // Render Khu vực "VIỆC CẦN XỬ LÝ" (Kết hợp Task chưa xong & Thông báo có deadline chưa hoàn thành)
             const urgentItems = [];
@@ -5275,6 +5321,11 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
             const subLabel = document.getElementById('push-device-sub-label');
             const totalLabel = document.getElementById('push-total-devices-label');
             const btnToggle = document.getElementById('btn-toggle-web-push');
+            const chimeSelect = document.getElementById('select-notification-chime');
+
+            if (chimeSelect) {
+                chimeSelect.value = localStorage.getItem('chilang_notification_chime') || 'crystal';
+            }
 
             if (!badge || !permLabel) return;
 
@@ -6341,34 +6392,165 @@ ${riskLines}
         }
 
         // ---------------------------------------------------------------------
-        // POPUP NỔI THÔNG BÁO TRÊN MÀN HÌNH ĐIỆN THOẠI / WEB APP (HEADS-UP POPUP)
+        // POPUP NỔI THÔNG BÁO TRÊN MÀN HÌNH ĐIỆN THOẠI / WEB APP (HEADS-UP BANNER)
+        // KÈM BỘ TỔNG HỢP ÂM THANH ĐA ÂM CAO CẤP (CRYSTAL HARP / MARIMBA / AURORA)
+        // & CHẤM ĐỎ ĐẾM TIN CHƯA ĐỌC NGOÀI MÀN HÌNH CHÍNH (APP ICON BADGE)
         // ---------------------------------------------------------------------
+        function syncAppIconUnreadBadge(count) {
+            const n = Math.max(0, Number(count) || 0);
+            try {
+                if ('setAppBadge' in navigator) {
+                    if (n > 0) {
+                        navigator.setAppBadge(n).catch(() => {});
+                    } else if ('clearAppBadge' in navigator) {
+                        navigator.clearAppBadge().catch(() => {});
+                    }
+                }
+            } catch (_) {}
+        }
+
         function isMobileOrInstalledWebApp() {
             if (isPwaAlreadyInstalled()) return true;
             const ua = navigator.userAgent || '';
             return /Android|iPhone|iPad|iPod|Mobile/i.test(ua) || window.innerWidth <= 1024;
         }
 
-        function playFloatingPopupAlertSound() {
+        function handleChangeNotificationChime(chimeKey) {
+            try {
+                localStorage.setItem('chilang_notification_chime', chimeKey || 'crystal');
+            } catch (_) {}
+            playFloatingPopupAlertSound('normal', chimeKey || 'crystal');
+        }
+
+        function previewSelectedNotificationChime() {
+            const sel = document.getElementById('select-notification-chime');
+            const tone = sel ? sel.value : (localStorage.getItem('chilang_notification_chime') || 'crystal');
+            playFloatingPopupAlertSound('normal', tone);
+        }
+
+        // Bộ tổng hợp âm thanh đa âm (Polyphonic Web Audio Synthesizer) ấm áp, trong trẻo và sang trọng
+        function playFloatingPopupAlertSound(priority = 'normal', forceTone = null) {
             try {
                 if (navigator.vibrate) {
-                    navigator.vibrate([180, 80, 180]);
+                    if (priority === 'urgent') {
+                        navigator.vibrate([220, 90, 220, 90, 280]);
+                    } else {
+                        navigator.vibrate([140, 70, 180]);
+                    }
                 }
+
                 const AudioCtx = window.AudioContext || window.webkitAudioContext;
                 if (!AudioCtx) return;
                 const ctx = new AudioCtx();
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
-                osc.frequency.setValueAtTime(880, ctx.currentTime + 0.12); // A5
-                gain.gain.setValueAtTime(0.08, ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.38);
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.start();
-                osc.stop(ctx.currentTime + 0.4);
+                const now = ctx.currentTime;
+
+                // Hàm phát 1 nốt nhạc đa âm gồm âm cơ bản (fundamental) + họa âm bậc 2, bậc 3 tạo độ ngân như chuông pha lê / đàn harp
+                const playRichNote = (freq, startOffset, duration, peakGain = 0.14, waveType = 'sine', overtoneRatio = 0.28) => {
+                    const startTime = now + startOffset;
+                    const stopTime = startTime + duration;
+
+                    // Âm chính (Fundamental)
+                    const osc1 = ctx.createOscillator();
+                    const gain1 = ctx.createGain();
+                    osc1.type = waveType;
+                    osc1.frequency.setValueAtTime(freq, startTime);
+                    gain1.gain.setValueAtTime(0.0001, startTime);
+                    gain1.gain.linearRampToValueAtTime(peakGain, startTime + 0.018);
+                    gain1.gain.exponentialRampToValueAtTime(0.0001, stopTime);
+                    osc1.connect(gain1);
+                    gain1.connect(ctx.destination);
+                    osc1.start(startTime);
+                    osc1.stop(stopTime);
+
+                    // Họa âm pha lê (Crystal Octave & Fifth Shimmer)
+                    const osc2 = ctx.createOscillator();
+                    const gain2 = ctx.createGain();
+                    osc2.type = 'triangle';
+                    osc2.frequency.setValueAtTime(freq * 2, startTime);
+                    gain2.gain.setValueAtTime(0.0001, startTime);
+                    gain2.gain.linearRampToValueAtTime(peakGain * overtoneRatio, startTime + 0.012);
+                    gain2.gain.exponentialRampToValueAtTime(0.0001, startTime + duration * 0.65);
+                    osc2.connect(gain2);
+                    gain2.connect(ctx.destination);
+                    osc2.start(startTime);
+                    osc2.stop(startTime + duration * 0.68);
+                };
+
+                const selectedTone = forceTone || (priority === 'urgent' ? 'urgent' : (localStorage.getItem('chilang_notification_chime') || 'crystal'));
+
+                if (selectedTone === 'urgent') {
+                    // Âm báo Chỉ đạo Khẩn: Hợp âm đôi uy nghiêm, rõ ràng (A5 -> C#6 -> E6 -> A6)
+                    playRichNote(880.00, 0.00, 0.28, 0.16, 'triangle', 0.35);  // A5
+                    playRichNote(1108.73, 0.09, 0.28, 0.16, 'triangle', 0.35); // C#6
+                    playRichNote(1318.51, 0.18, 0.35, 0.18, 'sine', 0.40);     // E6
+                    playRichNote(1760.00, 0.30, 0.65, 0.20, 'sine', 0.30);     // A6
+                } else if (selectedTone === 'marimba') {
+                    // Hợp âm Marimba Gỗ Ấm: F4 -> A4 -> C5 -> E5 (Fmaj7 ấm áp, êm dịu)
+                    playRichNote(349.23, 0.00, 0.42, 0.18, 'sine', 0.15);      // F4
+                    playRichNote(440.00, 0.08, 0.42, 0.17, 'sine', 0.15);      // A4
+                    playRichNote(523.25, 0.16, 0.48, 0.16, 'sine', 0.18);      // C5
+                    playRichNote(659.25, 0.25, 0.75, 0.18, 'sine', 0.20);      // E5
+                } else if (selectedTone === 'aurora') {
+                    // Giai điệu Sao Mai (Aurora Melody): G5 -> B5 -> D6 -> G6 (Thanh thoát, tươi sáng)
+                    playRichNote(783.99, 0.00, 0.45, 0.13, 'sine', 0.32);      // G5
+                    playRichNote(987.77, 0.11, 0.45, 0.14, 'sine', 0.30);      // B5
+                    playRichNote(1174.66, 0.22, 0.55, 0.15, 'sine', 0.28);     // D6
+                    playRichNote(1567.98, 0.34, 0.85, 0.16, 'sine', 0.22);     // G6
+                } else if (selectedTone === 'executive') {
+                    // Chuông Điều Hành Đôi (Executive Harmony): E5 + B5 -> G#5 + E6
+                    playRichNote(659.25, 0.00, 0.45, 0.14, 'sine', 0.25);      // E5
+                    playRichNote(987.77, 0.02, 0.45, 0.11, 'sine', 0.20);      // B5
+                    playRichNote(830.61, 0.18, 0.75, 0.14, 'sine', 0.25);      // G#5
+                    playRichNote(1318.51, 0.20, 0.85, 0.16, 'sine', 0.25);     // E6
+                } else {
+                    // Mặc định: Chuông Pha Lê (Crystal Harp Arp - C5 -> E5 -> G5 -> B5 -> C6)
+                    // Nghe cực kỳ trong trẻo, sang trọng và có độ ngân vang êm tai
+                    playRichNote(523.25, 0.00, 0.50, 0.14, 'sine', 0.30);      // C5
+                    playRichNote(659.25, 0.08, 0.50, 0.14, 'sine', 0.30);      // E5
+                    playRichNote(783.99, 0.16, 0.55, 0.15, 'sine', 0.28);      // G5
+                    playRichNote(987.77, 0.24, 0.60, 0.14, 'sine', 0.25);      // B5
+                    playRichNote(1046.50, 0.33, 0.90, 0.17, 'sine', 0.32);     // C6
+                }
+
+                setTimeout(() => {
+                    try { ctx.close(); } catch (_) {}
+                }, 1400);
             } catch (_) {}
+        }
+
+        // Xử lý cử chỉ vuốt lên (Swipe-up) trên màn hình cảm ứng điện thoại để ẩn Banner giống Zalo / iOS
+        let popupTouchStartY = 0;
+        let popupTouchCurrentY = 0;
+
+        function handleFloatingPopupTouchStart(e) {
+            if (!e.touches || !e.touches[0]) return;
+            popupTouchStartY = e.touches[0].clientY;
+            popupTouchCurrentY = popupTouchStartY;
+        }
+
+        function handleFloatingPopupTouchMove(e) {
+            if (!e.touches || !e.touches[0]) return;
+            popupTouchCurrentY = e.touches[0].clientY;
+            const deltaY = popupTouchCurrentY - popupTouchStartY;
+            const card = document.getElementById('floating-popup-card');
+            if (card && deltaY < 0) {
+                card.style.transform = `translateY(${Math.max(deltaY, -120)}px)`;
+                card.style.opacity = String(Math.max(0.2, 1 + deltaY / 120));
+            }
+        }
+
+        function handleFloatingPopupTouchEnd() {
+            const deltaY = popupTouchCurrentY - popupTouchStartY;
+            const card = document.getElementById('floating-popup-card');
+            if (card) {
+                card.style.transform = '';
+                card.style.opacity = '';
+            }
+            if (deltaY < -38) {
+                dismissFloatingAnnouncementPopup();
+            }
+            popupTouchStartY = 0;
+            popupTouchCurrentY = 0;
         }
 
         function checkAndShowUnreadAnnouncementsFloatingPopup(isInitialCheck = false) {
@@ -6466,7 +6648,7 @@ ${riskLines}
         function renderCurrentFloatingPopup(playAlert = false) {
             const container = document.getElementById('floating-announcement-popup');
             const card = document.getElementById('floating-popup-card');
-            const header = document.getElementById('floating-popup-header');
+            const statusDot = document.getElementById('floating-popup-status-dot');
             const badge = document.getElementById('floating-popup-badge');
             const counter = document.getElementById('floating-popup-counter');
             const titleEl = document.getElementById('floating-popup-title');
@@ -6474,6 +6656,7 @@ ${riskLines}
             const metaEl = document.getElementById('floating-popup-meta');
             const deadlineEl = document.getElementById('floating-popup-deadline');
             const nextBtn = document.getElementById('floating-popup-next-btn');
+            const markReadBtn = document.getElementById('floating-popup-mark-read-btn');
             const osPushBox = document.getElementById('floating-popup-enable-os-push');
 
             if (!container || AppState.floatingPopupQueue.length === 0) {
@@ -6488,28 +6671,31 @@ ${riskLines}
             const item = AppState.floatingPopupQueue[AppState.floatingPopupIndex];
             const total = AppState.floatingPopupQueue.length;
 
-            // Tùy biến màu sắc theo mức độ Khẩn / Quan trọng / Thông thường
+            // Tùy biến màu sắc viền & nhãn theo mức độ Khẩn / Quan trọng / Thông thường
             if (item.priority === 'urgent') {
-                card.className = 'animate-floating-popup bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border-2 border-red-600 overflow-hidden';
-                header.className = 'px-4 py-2.5 bg-gradient-to-r from-red-700 to-rose-700 text-white flex items-center justify-between gap-2';
-                badge.textContent = '🚨 TIN KHẨN';
+                card.className = 'animate-floating-popup bg-white/95 backdrop-blur-xl rounded-3xl shadow-[0_20px_50px_rgba(220,38,38,0.28)] border border-red-200 ring-2 ring-red-600 overflow-hidden transition-transform duration-150';
+                if (statusDot) statusDot.className = '-top-1 -right-1 absolute w-3.5 h-3.5 rounded-full bg-red-600 ring-2 ring-white animate-ping';
+                badge.className = 'px-2 py-0.5 rounded-full bg-red-100 text-red-700 text-[10px] font-extrabold uppercase tracking-wider shrink-0';
+                badge.textContent = '🚨 KHẨN';
             } else if (item.priority === 'important') {
-                card.className = 'animate-floating-popup bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border-2 border-amber-500 overflow-hidden';
-                header.className = 'px-4 py-2.5 bg-gradient-to-r from-amber-600 to-orange-600 text-white flex items-center justify-between gap-2';
+                card.className = 'animate-floating-popup bg-white/95 backdrop-blur-xl rounded-3xl shadow-[0_20px_50px_rgba(217,119,6,0.24)] border border-amber-200 ring-2 ring-amber-500 overflow-hidden transition-transform duration-150';
+                if (statusDot) statusDot.className = '-top-1 -right-1 absolute w-3.5 h-3.5 rounded-full bg-amber-500 ring-2 ring-white animate-pulse';
+                badge.className = 'px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-extrabold uppercase tracking-wider shrink-0';
                 badge.textContent = '⭐ QUAN TRỌNG';
             } else {
-                card.className = 'animate-floating-popup bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border-2 border-blue-600 overflow-hidden';
-                header.className = 'px-4 py-2.5 bg-gradient-to-r from-blue-800 to-indigo-800 text-white flex items-center justify-between gap-2';
-                badge.textContent = '🔔 THÔNG BÁO MỚI';
+                card.className = 'animate-floating-popup bg-white/95 backdrop-blur-xl rounded-3xl shadow-[0_20px_50px_rgba(15,23,42,0.25)] border border-slate-200/90 ring-2 ring-blue-600/80 overflow-hidden transition-transform duration-150';
+                if (statusDot) statusDot.className = '-top-1 -right-1 absolute w-3.5 h-3.5 rounded-full bg-blue-600 ring-2 ring-white animate-pulse';
+                badge.className = 'px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-extrabold uppercase tracking-wider shrink-0';
+                badge.textContent = '🔔 TIN MỚI';
             }
 
-            counter.textContent = total > 1 ? `(${AppState.floatingPopupIndex + 1}/${total} tin chưa đọc)` : 'Chưa đọc';
+            counter.textContent = total > 1 ? `Tin ${AppState.floatingPopupIndex + 1}/${total}` : 'Vừa xong';
             titleEl.textContent = item.title || 'Thông báo';
-            summaryEl.textContent = item.summary || 'Chạm "Xem ngay" để đọc toàn bộ nội dung chỉ đạo.';
-            metaEl.innerHTML = `<i class="fa-regular fa-building mr-1 text-blue-600"></i>${escapeHtml(item.meta || 'THPT Chi Lăng')}`;
+            summaryEl.textContent = item.summary || 'Chạm vào thông báo để xem toàn bộ nội dung chỉ đạo.';
+            metaEl.textContent = item.meta || 'Ban Giám Hiệu • THPT Chi Lăng';
 
             if (item.deadline) {
-                deadlineEl.textContent = `⏰ Hạn: ${formatDateTimeVN(item.deadline)}`;
+                deadlineEl.innerHTML = `<i class="fa-regular fa-clock"></i><span>Hạn xử lý: ${formatDateTimeVN(item.deadline)}</span>`;
                 deadlineEl.classList.remove('hidden');
             } else {
                 deadlineEl.classList.add('hidden');
@@ -6517,6 +6703,10 @@ ${riskLines}
 
             if (nextBtn) {
                 nextBtn.classList.toggle('hidden', total <= 1);
+            }
+
+            if (markReadBtn) {
+                markReadBtn.classList.toggle('hidden', item.kind !== 'announcement' || !item.refId);
             }
 
             // Hiển thị nút bật quyền thông báo hệ thống nếu trên điện thoại / Web App mà chưa cấp quyền Notification
@@ -6533,7 +6723,7 @@ ${riskLines}
             card.classList.add('animate-floating-popup');
 
             if (playAlert) {
-                playFloatingPopupAlertSound();
+                playFloatingPopupAlertSound(item.priority || 'normal');
             }
         }
 
@@ -6541,6 +6731,32 @@ ${riskLines}
             if (AppState.floatingPopupQueue.length <= 1) return;
             AppState.floatingPopupIndex = (AppState.floatingPopupIndex + 1) % AppState.floatingPopupQueue.length;
             renderCurrentFloatingPopup(false);
+        }
+
+        async function markCurrentFloatingPopupAsRead(event) {
+            if (event) event.stopPropagation();
+            if (AppState.floatingPopupQueue.length === 0) return;
+            const item = AppState.floatingPopupQueue[AppState.floatingPopupIndex];
+            if (!item) return;
+
+            if (item.id) AppState.dismissedPopupIds.add(item.id);
+            if (item.refId) {
+                AppState.dismissedPopupIds.add('ann-' + item.refId);
+                try {
+                    await markAnnouncementAsRead(item.refId);
+                } catch (_) {}
+            }
+
+            AppState.floatingPopupQueue.splice(AppState.floatingPopupIndex, 1);
+            if (AppState.floatingPopupQueue.length === 0) {
+                dismissFloatingAnnouncementPopup();
+                showToast('Đã đánh dấu đọc thông báo!', 'success');
+            } else {
+                if (AppState.floatingPopupIndex >= AppState.floatingPopupQueue.length) {
+                    AppState.floatingPopupIndex = 0;
+                }
+                renderCurrentFloatingPopup(false);
+            }
         }
 
         function dismissFloatingAnnouncementPopup() {

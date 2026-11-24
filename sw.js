@@ -4,7 +4,7 @@
 // "Cài đặt ứng dụng" (Install App / WebAPK) thay vì chỉ tạo lối tắt.
 // =============================================================================
 
-const CACHE_NAME = 'thpt-chilang-pwa-v4';
+const CACHE_NAME = 'thpt-chilang-pwa-v5';
 const DEFAULT_ICON = './Logocl.png';
 const BADGE_ICON = './icon-192.png';
 
@@ -70,7 +70,8 @@ self.addEventListener('push', (event) => {
         title: 'Cổng Điều Hành THPT Chi Lăng',
         body: 'Bạn có thông báo điều hành mới từ nhà trường.',
         type: 'announcement',
-        refId: null
+        refId: null,
+        badgeCount: 1
     };
     try {
         if (event.data) {
@@ -78,14 +79,22 @@ self.addEventListener('push', (event) => {
         }
     } catch (_) {}
 
+    if (self.navigator && self.navigator.setAppBadge && data.badgeCount) {
+        try { self.navigator.setAppBadge(Number(data.badgeCount) || 1); } catch (_) {}
+    }
+
     event.waitUntil(
         self.registration.showNotification(data.title || 'THPT Chi Lăng', {
             body: data.body || '',
             icon: DEFAULT_ICON,
             badge: BADGE_ICON,
-            vibrate: [200, 100, 200],
+            vibrate: [180, 80, 220],
             renotify: true,
             tag: 'chilang-push-' + (data.refId || Date.now()),
+            actions: [
+                { action: 'open', title: '👁️ Xem ngay' },
+                { action: 'dismiss', title: 'Đóng' }
+            ],
             data: data
         })
     );
@@ -94,6 +103,9 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
     const notifData = event.notification.data || {};
     event.notification.close();
+    if (event.action === 'dismiss') {
+        return;
+    }
     event.waitUntil(
         self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
             for (const client of clientList) {
