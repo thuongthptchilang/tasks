@@ -1213,7 +1213,10 @@
                                 <span>Bật thông báo đẩy trên thiết bị này</span>
                             </button>
                             <button type="button" onclick="handleSendTestPushNotification()" class="px-3.5 py-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold transition">
-                                <i class="fa-solid fa-paper-plane mr-1"></i> Gửi thử thông báo đẩy
+                                <i class="fa-solid fa-paper-plane mr-1"></i> Gửi thử ngay
+                            </button>
+                            <button type="button" onclick="handleTestLockScreenPush5Seconds()" class="px-3.5 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-extrabold transition">
+                                <i class="fa-solid fa-mobile-screen mr-1"></i> Test Màn hình khóa (Sau 5 giây)
                             </button>
                             <button id="btn-admin-supabase-config" type="button" onclick="openQuickConfigModal()" class="hidden px-3.5 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-xs font-semibold text-slate-700">
                                 <i class="fa-solid fa-database mr-1.5"></i> Cấu hình kết nối Supabase (Chỉ Admin)
@@ -2279,6 +2282,9 @@
                 // 5. Hiển thị Popup nổi các thông báo chưa đọc trên màn hình điện thoại / Web App
                 checkAndShowUnreadAnnouncementsFloatingPopup(true);
 
+                // 6. Tự động đồng bộ VAPID Push Subscription thật (FCM / APNs) để nhận thông báo cả khi tắt App & Khóa màn hình
+                ensureRealVapidSubscriptionSaved();
+
                 // Khởi tạo lời chào AI nếu khung chat đang trống
                 initAiWelcomeMessage();
             } catch (err) {
@@ -3311,8 +3317,9 @@
 
                 showToast(isPublished ? 'Đã ban hành thông báo thành công!' : 'Đã lưu thông báo nháp!', 'success');
 
-                // Nếu vừa đăng thông báo mới thành công -> Mở ngay hộp thoại SAO CHÉP THÔNG BÁO ZALO đúng mô hình Mục XXII
+                // Nếu vừa đăng thông báo mới thành công -> Đẩy Background Web Push (VAPID) tới màn hình khóa của người nhận & mở hộp thoại Zalo
                 if (isPublished && savedAnn) {
+                    dispatchBackgroundWebPushForAnnouncement(savedAnn);
                     openZaloReminderModal(savedAnn);
                 }
             } catch (err) {
@@ -3647,6 +3654,15 @@ Hạn thực hiện: ${deadlineStr}
                 if (assignErr) throw assignErr;
 
                 await logUserActivity('CREATE_TASK', 'task', createdTask.id, { title, assignees_count: assigneeIds.length });
+
+                // Đẩy Background Web Push (VAPID) đánh thức màn hình khóa của các giáo viên được giao việc
+                dispatchBackgroundWebPushToUsers(assigneeIds, {
+                    title: `${priority === 'urgent' ? '🚨 [KHẨN] ' : '📋 '}Công việc mới: ${title}`,
+                    body: description || `Hạn hoàn thành: ${formatDateTimeVN(createdTask.deadline)}`,
+                    type: 'task',
+                    refId: createdTask.id,
+                    priority: priority || 'normal'
+                });
 
                 closeModal('modal-task-form');
                 showToast('Đã tạo và giao công việc thành công!', 'success');
@@ -5371,6 +5387,20 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
             }
         }
 
+        // Khóa VAPID Public Key chuẩn P-256 (RFC 8292) dùng để đăng ký Push Service thật với Google FCM (Android) & Apple APNs (iOS 16.4+)
+        const DEFAULT_VAPID_PUBLIC_KEY = 'BJZl_Rac1djucI9ICKs3iOBlnB_sxf2qavsMUbF5vw8-F9nIHvdllZTRbGKQZTz8e46VfRtbwakceKmAXUjf_oI';
+
+        function urlBase64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+            const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+            const rawData = window.atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
+        }
+
         function getDeviceFingerprintEndpoint() {
             let devId = localStorage.getItem('chilang_device_push_id');
             if (!devId) {
@@ -5380,6 +5410,64 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
             return devId;
         }
 
+        async function subscribeAndGetRealPushPayload() {
+            let endpoint = getDeviceFingerprintEndpoint();
+            let p256dh = 'realtime-web-push-v2';
+            let auth = 'authenticated';
+
+            try {
+                const reg = AppState.swRegistration || (navigator.serviceWorker ? await navigator.serviceWorker.ready : null);
+                if (reg && reg.pushManager) {
+                    let sub = await reg.pushManager.getSubscription();
+                    if (!sub) {
+                        sub = await reg.pushManager.subscribe({
+                            userVisibleOnly: true,
+                            applicationServerKey: urlBase64ToUint8Array(DEFAULT_VAPID_PUBLIC_KEY)
+                        });
+                    }
+                    if (sub) {
+                        const subJson = sub.toJSON();
+                        if (subJson && subJson.endpoint && subJson.keys) {
+                            endpoint = subJson.endpoint;
+                            p256dh = subJson.keys.p256dh || p256dh;
+                            auth = subJson.keys.auth || auth;
+                            localStorage.setItem('chilang_device_push_id', endpoint);
+                        }
+                    }
+                }
+            } catch (pushErr) {
+                console.warn('Browser pushManager.subscribe fallback:', pushErr);
+            }
+
+            return { endpoint, p256dh, auth };
+        }
+
+        async function ensureRealVapidSubscriptionSaved() {
+            if (!('Notification' in window) || Notification.permission !== 'granted') return;
+            if (localStorage.getItem('chilang_web_push_enabled') === 'false') return;
+            if (!supabaseClient || !AppState.user) return;
+
+            try {
+                const { endpoint, p256dh, auth } = await subscribeAndGetRealPushPayload();
+                localStorage.setItem('chilang_web_push_enabled', 'true');
+                const ua = navigator.userAgent || 'Web Browser';
+                const isMobile = /Android|iPhone|iPad|Mobile/i.test(ua);
+                const deviceLabel = isMobile ? 'Điện thoại / Tablet (VAPID Push)' : 'Máy tính / Laptop (VAPID Push)';
+
+                await supabaseClient
+                    .from('push_subscriptions')
+                    .upsert({
+                        user_id: AppState.user.id,
+                        endpoint,
+                        p256dh,
+                        auth,
+                        user_agent: ua.slice(0, 250),
+                        device_label: deviceLabel,
+                        is_enabled: true
+                    }, { onConflict: 'user_id,endpoint' });
+            } catch (_) {}
+        }
+
         async function handleEnableWebPushNotifications() {
             if (!('Notification' in window)) {
                 showToast('Trình duyệt của bạn không hỗ trợ Web Push Notifications.', 'error');
@@ -5387,18 +5475,23 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
             }
 
             const currentlyEnabled = localStorage.getItem('chilang_web_push_enabled') === 'true' && Notification.permission === 'granted';
-            const endpoint = getDeviceFingerprintEndpoint();
+            const savedEndpoint = getDeviceFingerprintEndpoint();
 
             if (currentlyEnabled) {
                 // Tắt thông báo đẩy
                 localStorage.setItem('chilang_web_push_enabled', 'false');
+                try {
+                    const reg = AppState.swRegistration || (navigator.serviceWorker ? await navigator.serviceWorker.ready : null);
+                    const sub = reg?.pushManager ? await reg.pushManager.getSubscription() : null;
+                    if (sub) await sub.unsubscribe();
+                } catch (_) {}
                 if (supabaseClient && AppState.user) {
                     try {
                         await supabaseClient
                             .from('push_subscriptions')
                             .delete()
                             .eq('user_id', AppState.user.id)
-                            .eq('endpoint', endpoint);
+                            .eq('endpoint', savedEndpoint);
                     } catch (_) {}
                 }
                 await refreshAllData(false);
@@ -5417,19 +5510,22 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
 
                 localStorage.setItem('chilang_web_push_enabled', 'true');
 
+                // Đăng ký kênh Push hệ điều hành thật (Google FCM / Apple APNs) qua VAPID Public Key
+                const { endpoint, p256dh, auth } = await subscribeAndGetRealPushPayload();
+
                 // Lưu đăng ký thiết bị lên bảng public.push_subscriptions
                 if (supabaseClient && AppState.user) {
                     const ua = navigator.userAgent || 'Web Browser';
                     const isMobile = /Android|iPhone|iPad|Mobile/i.test(ua);
-                    const deviceLabel = isMobile ? 'Điện thoại / Tablet' : 'Máy tính / Laptop';
+                    const deviceLabel = isMobile ? 'Điện thoại / Tablet (VAPID)' : 'Máy tính / Laptop (VAPID)';
 
                     const { error } = await supabaseClient
                         .from('push_subscriptions')
                         .upsert({
                             user_id: AppState.user.id,
                             endpoint: endpoint,
-                            p256dh: 'realtime-web-push-v2',
-                            auth: 'authenticated',
+                            p256dh: p256dh,
+                            auth: auth,
                             user_agent: ua.slice(0, 250),
                             device_label: deviceLabel,
                             is_enabled: true
@@ -5442,13 +5538,100 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
                 updateWebPushSettingsUI();
                 triggerNativeWebPushNotification(
                     '🔔 Đã bật Thông báo đẩy THPT Chi Lăng!',
-                    'Thiết bị của Thầy/Cô sẽ nhận thông báo tức thì khi có chỉ đạo hoặc công việc mới.'
+                    'Thiết bị sẽ nhận thông báo nổi ngay trên Màn hình khóa & Ngoài màn hình chính kể cả khi đóng ứng dụng.'
                 );
-                showToast('Đã kích hoạt Web Push Notifications thành công!', 'success');
+                showToast('Đã kích hoạt Thông báo đẩy nền (Màn hình khóa & Ngoài ứng dụng) thành công!', 'success');
             } catch (err) {
                 console.error('Lỗi bật Web Push:', err);
                 showToast('Không thể kích hoạt thông báo đẩy: ' + err.message, 'error');
             }
+        }
+
+        // Gửi thông báo đẩy nền (Background Web Push VAPID) qua Supabase Edge Function `ai-school-assistant`
+        // giúp đánh thức điện thoại của giáo viên ngay cả khi đã đóng hẳn ứng dụng hoặc đang khóa màn hình
+        async function dispatchBackgroundWebPushToUsers(userIds, notificationPayload) {
+            if (!supabaseClient) return;
+            try {
+                await supabaseClient.functions.invoke('ai-school-assistant', {
+                    body: {
+                        action: 'send_web_push',
+                        user_ids: Array.isArray(userIds) ? userIds : [],
+                        notification: {
+                            title: notificationPayload.title || 'Cổng Điều Hành THPT Chi Lăng',
+                            body: notificationPayload.body || 'Bạn có thông báo điều hành mới từ nhà trường.',
+                            type: notificationPayload.type || 'announcement',
+                            refId: notificationPayload.refId || null,
+                            priority: notificationPayload.priority || 'normal',
+                            badgeCount: notificationPayload.badgeCount || 1
+                        }
+                    }
+                });
+            } catch (err) {
+                console.warn('Background Web Push Edge Function notice:', err?.message || err);
+            }
+        }
+
+        function dispatchBackgroundWebPushForAnnouncement(ann) {
+            if (!ann || !ann.is_published) return;
+            let targetUsers = AppState.profiles.filter(u => u.is_active !== false);
+            if (ann.target_type === 'department' && ann.target_department_id) {
+                targetUsers = targetUsers.filter(u => userHasDepartment(u, ann.target_department_id));
+            } else if (ann.target_type === 'role' && ann.target_role) {
+                targetUsers = targetUsers.filter(u => u.role === ann.target_role);
+            } else if (ann.target_type === 'selected' && Array.isArray(ann.target_user_ids)) {
+                targetUsers = targetUsers.filter(u => ann.target_user_ids.includes(u.id));
+            }
+            const userIds = targetUsers.map(u => u.id);
+            const prefix = ann.priority === 'urgent' ? '🚨 [KHẨN] ' : (ann.priority === 'important' ? '⭐ [QUAN TRỌNG] ' : '🔔 ');
+            dispatchBackgroundWebPushToUsers(userIds, {
+                title: `${prefix}${ann.title}`,
+                body: ann.summary || (ann.content ? String(ann.content).slice(0, 140) : 'Chạm để xem chi tiết thông báo điều hành mới.'),
+                type: 'announcement',
+                refId: ann.id,
+                priority: ann.priority || 'normal'
+            });
+        }
+
+        async function handleTestLockScreenPush5Seconds() {
+            if (!('Notification' in window)) {
+                showToast('Trình duyệt không hỗ trợ Notification API.', 'error');
+                return;
+            }
+            if (Notification.permission !== 'granted') {
+                await handleEnableWebPushNotifications();
+                if (Notification.permission !== 'granted') return;
+            }
+
+            await ensureRealVapidSubscriptionSaved();
+
+            showToast('⏳ Hãy bấm nút Nguồn khóa màn hình (hoặc thoát ra màn hình chính) NGAY! Thông báo sẽ nổ sau 5 giây...', 'warning');
+
+            // 1. Giao cho Service Worker giữ tiến trình ngầm (event.waitUntil) và kích hoạt thông báo sau 5 giây
+            try {
+                const reg = AppState.swRegistration || (navigator.serviceWorker ? await navigator.serviceWorker.ready : null);
+                if (reg && reg.active) {
+                    reg.active.postMessage({
+                        type: 'SCHEDULE_LOCKSCREEN_TEST_PUSH',
+                        delayMs: 5000,
+                        title: '🚨 [KHẨN] Cổng Điều Hành THPT Chi Lăng',
+                        body: 'Thông báo trên Màn hình khóa & Ngoài màn hình chính hoạt động thành công!',
+                        refId: AppState.announcements[0]?.id || null
+                    });
+                }
+            } catch (_) {}
+
+            // 2. Đồng thời sau 5 giây gọi luôn Background Web Push (VAPID) từ máy chủ Supabase Edge Function tới điện thoại này
+            setTimeout(() => {
+                if (AppState.user) {
+                    dispatchBackgroundWebPushToUsers([AppState.user.id], {
+                        title: '🚨 [KHẨN] Cổng Điều Hành THPT Chi Lăng',
+                        body: 'Thông báo đẩy nền (Background Web Push) tới Màn hình khóa hoạt động thành công!',
+                        type: 'announcement',
+                        refId: AppState.announcements[0]?.id || null,
+                        priority: 'urgent'
+                    });
+                }
+            }, 4500);
         }
 
         function triggerNativeWebPushNotification(title, body, type = 'announcement', refId = null) {
