@@ -695,8 +695,11 @@
                             <button type="button" data-tab="overdue" onclick="setTaskTab('overdue')" class="task-tab-btn px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition shrink-0">Quá hạn</button>
                         </div>
 
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 flex-wrap">
                             <input id="task-search-input" type="text" oninput="renderTasksView()" placeholder="Tìm tên công việc..." class="px-3.5 py-2 text-xs rounded-xl border border-slate-300 focus:border-blue-600 outline-none" />
+                            <button id="btn-clear-all-tasks" type="button" onclick="confirmClearAllTestTasks()" class="hidden px-3.5 py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-bold rounded-xl transition shrink-0">
+                                <i class="fa-solid fa-broom mr-1"></i> Xóa hết công việc mẫu
+                            </button>
                             <button id="btn-create-task" type="button" onclick="openTaskFormModal()" class="hidden px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold rounded-xl shadow-xs transition shrink-0">
                                 <i class="fa-solid fa-plus mr-1.5"></i> Giao công việc
                             </button>
@@ -1226,6 +1229,31 @@
                             </button>
                             <button id="btn-admin-supabase-config" type="button" onclick="openQuickConfigModal()" class="hidden px-3.5 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-xs font-semibold text-slate-700">
                                 <i class="fa-solid fa-database mr-1.5"></i> Cấu hình kết nối Supabase (Chỉ Admin)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- KHỐI QUẢN TRỊ DỌN SẠCH DỮ LIỆU TEST / MẪU TRƯỚC KHI VẬN HÀNH CHÍNH THỨC (CHỈ ADMIN / BGH) -->
+                    <div id="settings-admin-cleanup-card" class="hidden bg-white rounded-2xl border border-red-200/90 shadow-xs p-6 space-y-4">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-red-100 pb-3">
+                            <div>
+                                <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-red-100 text-red-800 text-[10px] font-extrabold uppercase">Quản trị hệ thống • Chỉ Admin / BGH</div>
+                                <h4 class="text-sm font-extrabold text-slate-900 uppercase mt-1">🧹 Dọn sạch dữ liệu Test / Mẫu để bắt đầu vận hành chính thức</h4>
+                            </div>
+                        </div>
+
+                        <p class="text-xs text-slate-600 leading-relaxed">
+                            Sử dụng chức năng này để xóa toàn bộ các <strong>Công việc mẫu / test</strong> hoặc <strong>Thông báo mẫu / test</strong> đã tạo trong quá trình thử nghiệm. Hệ thống sẽ giữ nguyên 100% danh sách tài khoản cán bộ giáo viên, phân quyền và cơ cấu Tổ / Ban / Nhóm của nhà trường.
+                        </p>
+
+                        <div class="flex flex-wrap items-center gap-3 pt-1">
+                            <button type="button" onclick="confirmClearAllTestTasks()" class="px-4 py-2.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-extrabold transition flex items-center gap-2">
+                                <i class="fa-regular fa-trash-can"></i>
+                                <span>Xóa toàn bộ Công việc mẫu / test</span>
+                            </button>
+                            <button type="button" onclick="confirmCleanAllTestAnnouncementsAndTasks()" class="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-extrabold shadow-xs transition flex items-center gap-2">
+                                <i class="fa-solid fa-broom"></i>
+                                <span>Làm sạch toàn bộ Thông báo & Công việc test</span>
                             </button>
                         </div>
                     </div>
@@ -2425,6 +2453,16 @@
             return ['super_admin', 'admin', 'accountant', 'department_head', 'youth_union'].includes(getCurrentRole());
         }
 
+        // Ai có quyền xóa một công việc? (ADMIN, BGH hoặc người đã tạo công việc đó)
+        function canModifyTask(task) {
+            if (!task || !AppState.profile) return false;
+            if (isAdminOrBGH()) return true;
+            if (['accountant', 'department_head', 'youth_union'].includes(getCurrentRole())) {
+                return task.created_by === AppState.profile.id;
+            }
+            return false;
+        }
+
         function updateUserSidebarAndPermissionsUI() {
             const p = AppState.profile;
             if (!p) return;
@@ -2455,9 +2493,14 @@
             document.getElementById('btn-ann-view-create').classList.toggle('hidden', !canAnn);
             document.getElementById('btn-create-task').classList.toggle('hidden', !canCreateTask());
 
-            // Nút tạo dữ liệu mẫu V1 nếu là Admin và chưa có thông báo nào
-            const showSeedBtn = isAdminOrBGH() && AppState.announcements.length === 0;
-            document.getElementById('btn-hero-seed-data').classList.toggle('hidden', !showSeedBtn);
+            const btnClearTasks = document.getElementById('btn-clear-all-tasks');
+            if (btnClearTasks) {
+                btnClearTasks.classList.toggle('hidden', !(isAdminOrBGH() && AppState.tasks.length > 0));
+            }
+
+            // Ẩn nút tạo dữ liệu mẫu V1 trên Trang chủ để hệ thống luôn sạch sẽ khi vận hành chính thức
+            const heroSeedBtn = document.getElementById('btn-hero-seed-data');
+            if (heroSeedBtn) heroSeedBtn.classList.add('hidden');
         }
         /* =====================================================================
            7. DATA FETCHING & DASHBOARD MODULE
@@ -2717,13 +2760,20 @@
                                 <span><i class="fa-regular fa-clock mr-1 ${isOverdue ? 'text-red-600' : ''}"></i>Hạn: <strong class="${isOverdue ? 'text-red-600' : 'text-slate-700'}">${deadlineText}</strong></span>
                                 <span>${escapeHtml(item.deptName)}</span>
                             </div>
-                            <div class="flex items-center gap-2 pt-1">
-                                <button type="button" onclick="${detailCall}" class="px-3 py-1.5 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 text-xs font-semibold text-slate-700 transition">
-                                    Chi tiết
-                                </button>
-                                <button type="button" onclick="${completeCall}" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition">
-                                    <i class="fa-solid fa-check mr-1"></i> Hoàn thành
-                                </button>
+                            <div class="flex items-center justify-between gap-2 pt-1">
+                                <div class="flex items-center gap-2">
+                                    <button type="button" onclick="${detailCall}" class="px-3 py-1.5 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 text-xs font-semibold text-slate-700 transition">
+                                        Chi tiết
+                                    </button>
+                                    <button type="button" onclick="${completeCall}" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition">
+                                        <i class="fa-solid fa-check mr-1"></i> Hoàn thành
+                                    </button>
+                                </div>
+                                ${isAdminOrBGH() ? `
+                                    <button type="button" onclick="${item.kind === 'task' ? `confirmDeleteTask('${item.id}')` : `confirmDeleteAnnouncement('${item.id}')`}" class="px-2.5 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-bold transition" title="Xóa mục này">
+                                        <i class="fa-regular fa-trash-can"></i>
+                                    </button>
+                                ` : ''}
                             </div>
                         </div>
                     `;
@@ -3433,6 +3483,12 @@ Hạn thực hiện: ${deadlineStr}
                                         <i class="fa-solid fa-check mr-1"></i> Hoàn thành
                                     </button>
                                 ` : ''}
+                                ${canModifyTask(task) ? `
+                                    <button type="button" onclick="confirmDeleteTask('${task.id}')" class="px-3 py-1.5 rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold transition flex items-center gap-1" title="Xóa công việc này">
+                                        <i class="fa-regular fa-trash-can"></i>
+                                        <span>Xóa</span>
+                                    </button>
+                                ` : ''}
                             </div>
                         </div>
 
@@ -3486,6 +3542,135 @@ Hạn thực hiện: ${deadlineStr}
 
         async function quickCompleteTaskFromDashboard(taskId) {
             await handleTaskStatusSelectChange(taskId, 'completed');
+        }
+
+        function confirmDeleteTask(taskId) {
+            const task = AppState.tasks.find(t => t.id === taskId);
+            if (!task) return;
+            if (!canModifyTask(task)) {
+                showToast('Bạn không có quyền xóa công việc này.', 'error');
+                return;
+            }
+            openConfirmDialog(
+                'Xóa công việc',
+                `Bạn có chắc chắn muốn xóa vĩnh viễn công việc "${task.title}" khỏi hệ thống?`,
+                async () => {
+                    setGlobalLoading(true, 'Đang xóa công việc...');
+                    try {
+                        const { error } = await supabaseClient
+                            .from('tasks')
+                            .delete()
+                            .eq('id', taskId);
+                        if (error) throw error;
+                        await logUserActivity('DELETE_TASK', 'task', taskId, { title: task.title });
+                        showToast('Đã xóa công việc thành công!', 'success');
+                        await refreshAllData(false);
+                    } catch (err) {
+                        console.error('Lỗi xóa task:', err);
+                        showToast('Không thể xóa công việc: ' + err.message, 'error');
+                    } finally {
+                        setGlobalLoading(false);
+                    }
+                }
+            );
+        }
+
+        function confirmClearAllTestTasks() {
+            if (!isAdminOrBGH() || !supabaseClient) {
+                showToast('Chỉ Quản trị viên (Admin / BGH) mới có quyền dọn sạch toàn bộ công việc.', 'error');
+                return;
+            }
+            if (AppState.tasks.length === 0) {
+                showToast('Hiện tại hệ thống đã sạch, không còn công việc nào.', 'info');
+                return;
+            }
+            openConfirmDialog(
+                '🧹 Xóa toàn bộ công việc mẫu / test',
+                `Bạn có chắc chắn muốn xóa toàn bộ ${AppState.tasks.length} công việc hiện có để làm sạch hệ thống trước khi vận hành chính thức?`,
+                async () => {
+                    setGlobalLoading(true, 'Đang dọn sạch toàn bộ công việc mẫu...');
+                    try {
+                        const taskIds = AppState.tasks.map(t => t.id);
+                        if (taskIds.length > 0) {
+                            const { error } = await supabaseClient
+                                .from('tasks')
+                                .delete()
+                                .in('id', taskIds);
+                            if (error) throw error;
+                        }
+                        try {
+                            await supabaseClient
+                                .from('notifications')
+                                .delete()
+                                .eq('type', 'task');
+                        } catch (_) {}
+                        await logUserActivity('CLEAR_ALL_TASKS', 'task', null, { deleted_count: taskIds.length });
+                        showToast(`Đã xóa sạch ${taskIds.length} công việc mẫu!`, 'success');
+                        await refreshAllData(false);
+                    } catch (err) {
+                        console.error('Lỗi xóa toàn bộ công việc:', err);
+                        showToast('Không thể xóa toàn bộ công việc: ' + err.message, 'error');
+                    } finally {
+                        setGlobalLoading(false);
+                    }
+                }
+            );
+        }
+
+        function confirmCleanAllTestAnnouncementsAndTasks() {
+            if (!isAdminOrBGH() || !supabaseClient) {
+                showToast('Chỉ Quản trị viên (Admin / BGH) mới có quyền làm sạch dữ liệu hệ thống.', 'error');
+                return;
+            }
+            const totalTasks = AppState.tasks.length;
+            const totalAnns = AppState.announcements.length;
+            if (totalTasks === 0 && totalAnns === 0) {
+                showToast('Hệ thống hiện tại đã sạch hoàn toàn (0 thông báo, 0 công việc).', 'info');
+                return;
+            }
+            openConfirmDialog(
+                '🧹 Làm sạch toàn bộ Thông báo & Công việc Test',
+                `Hệ thống sẽ xóa sạch ${totalAnns} thông báo mẫu và ${totalTasks} công việc mẫu (Giữ nguyên 100% tài khoản giáo viên và danh mục Tổ / Ban / Nhóm). Bạn có chắc chắn thực hiện?`,
+                async () => {
+                    setGlobalLoading(true, 'Đang làm sạch toàn bộ dữ liệu test...');
+                    try {
+                        const taskIds = AppState.tasks.map(t => t.id);
+                        if (taskIds.length > 0) {
+                            const { error: tErr } = await supabaseClient
+                                .from('tasks')
+                                .delete()
+                                .in('id', taskIds);
+                            if (tErr) throw tErr;
+                        }
+
+                        const annIds = AppState.announcements.map(a => a.id);
+                        if (annIds.length > 0) {
+                            const { error: aErr } = await supabaseClient
+                                .from('announcements')
+                                .delete()
+                                .in('id', annIds);
+                            if (aErr) throw aErr;
+                        }
+
+                        try {
+                            await supabaseClient
+                                .from('notifications')
+                                .delete()
+                                .neq('id', '00000000-0000-0000-0000-000000000000');
+                        } catch (_) {}
+
+                        dismissFloatingAnnouncementPopup();
+                        await logUserActivity('CLEAN_ALL_TEST_DATA', 'system', null, { deleted_announcements: annIds.length, deleted_tasks: taskIds.length });
+                        showToast('Đã làm sạch toàn bộ công việc và thông báo test! Hệ thống đã sẵn sàng sử dụng chính thức.', 'success');
+                        await refreshAllData(false);
+                    } catch (err) {
+                        console.error('Lỗi dọn sạch dữ liệu test:', err);
+                        showToast('Không thể dọn sạch dữ liệu: ' + err.message, 'error');
+                    } finally {
+                        setGlobalLoading(false);
+                    }
+                }
+            );
         }
 
         function openTaskFormModal() {
@@ -4648,6 +4833,8 @@ Trả lời bằng tiếng Việt rõ ràng, có cấu trúc, ưu tiên công vi
             document.getElementById('settings-admin-actions').classList.toggle('hidden', !canEdit);
             const btnSupCfg = document.getElementById('btn-admin-supabase-config');
             if (btnSupCfg) btnSupCfg.classList.toggle('hidden', !canEdit);
+            const cleanupCard = document.getElementById('settings-admin-cleanup-card');
+            if (cleanupCard) cleanupCard.classList.toggle('hidden', !canEdit);
 
             // V2: Cập nhật trạng thái Web Push & Service Worker
             updateWebPushSettingsUI();
