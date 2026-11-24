@@ -117,16 +117,82 @@
                 font-size: 16px !important;
             }
         }
+        @keyframes slideDownFloatingPopup {
+            0% {
+                opacity: 0;
+                transform: translateY(-24px) scale(0.96);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        .animate-floating-popup {
+            animation: slideDownFloatingPopup 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col antialiased selection:bg-blue-600 selection:text-white">
 
     <!-- =====================================================================
-         1. HTML SHELL (TOAST, LOADING, GUEST/LOGIN VIEW, MAIN APP, MODALS)
+         1. HTML SHELL (TOAST, FLOATING POPUP, LOADING, GUEST/LOGIN VIEW, MAIN APP, MODALS)
     ====================================================================== -->
 
     <!-- TOAST CONTAINER -->
     <div id="toast-container" class="fixed top-4 right-4 z-[100] flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+    <!-- POPUP NỔI THÔNG BÁO MỚI TRÊN MÀN HÌNH ĐIỆN THOẠI / WEB APP (HEADS-UP FLOATING POPUP) -->
+    <div id="floating-announcement-popup" class="fixed top-3 inset-x-3 sm:left-auto sm:right-5 sm:w-[400px] z-[95] hidden pt-safe pointer-events-auto">
+        <div id="floating-popup-card" class="animate-floating-popup bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border-2 border-blue-600 overflow-hidden">
+            <!-- Thanh tiêu đề Popup nổi -->
+            <div id="floating-popup-header" class="px-4 py-2.5 bg-gradient-to-r from-blue-800 to-indigo-800 text-white flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2 min-w-0">
+                    <img src="./Logocl.png" onerror="this.onerror=null;this.src='https://ui-avatars.com/api/?name=CL&background=1e40af&color=fff&size=128&bold=true';" alt="Logo" class="w-6 h-6 rounded-lg bg-white p-0.5 object-contain shrink-0" />
+                    <span id="floating-popup-badge" class="px-2 py-0.5 rounded-md bg-white/20 text-[10px] font-extrabold uppercase tracking-wider shrink-0">THÔNG BÁO MỚI</span>
+                    <span id="floating-popup-counter" class="text-[11px] text-blue-100 font-semibold truncate"></span>
+                </div>
+                <button type="button" onclick="dismissFloatingAnnouncementPopup()" class="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition shrink-0" title="Đóng popup">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+
+            <!-- Nội dung tóm tắt tin thông báo -->
+            <div class="p-4 space-y-2.5">
+                <div class="flex items-start justify-between gap-2">
+                    <h4 id="floating-popup-title" class="text-sm font-extrabold text-slate-900 leading-snug line-clamp-2">Tiêu đề thông báo</h4>
+                </div>
+                <p id="floating-popup-summary" class="text-xs text-slate-600 leading-relaxed line-clamp-2"></p>
+                <div class="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px] text-slate-500">
+                    <span id="floating-popup-meta" class="font-medium truncate"><i class="fa-regular fa-building mr-1 text-blue-600"></i>Ban Giám Hiệu</span>
+                    <span id="floating-popup-deadline" class="font-bold text-red-600 hidden"></span>
+                </div>
+
+                <!-- Nút nhắc bật quyền thông báo hệ thống trên màn hình khóa điện thoại (nếu chưa cấp quyền) -->
+                <div id="floating-popup-enable-os-push" class="hidden pt-1">
+                    <button type="button" onclick="enableOsPushFromFloatingPopup()" class="w-full py-1.5 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 text-[11px] font-bold flex items-center justify-center gap-1.5 transition">
+                        <i class="fa-solid fa-bell text-amber-600"></i>
+                        <span>Chạm để bật chuông báo nổi ngoài màn hình điện thoại</span>
+                    </button>
+                </div>
+
+                <!-- Các nút thao tác nhanh -->
+                <div class="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                    <button type="button" onclick="dismissFloatingAnnouncementPopup()" class="px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-600 text-xs font-semibold transition">
+                        Để sau
+                    </button>
+                    <div class="flex items-center gap-1.5">
+                        <button id="floating-popup-next-btn" type="button" onclick="nextFloatingAnnouncementPopup()" class="hidden px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition">
+                            Tin tiếp <i class="fa-solid fa-chevron-right ml-1 text-[10px]"></i>
+                        </button>
+                        <button id="floating-popup-open-btn" type="button" onclick="openCurrentFloatingPopupItem()" class="px-4 py-2 rounded-xl bg-blue-700 hover:bg-blue-800 text-white text-xs font-extrabold shadow-sm transition flex items-center gap-1.5">
+                            <i class="fa-regular fa-eye"></i>
+                            <span>Xem ngay</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- GLOBAL LOADING OVERLAY -->
     <div id="global-loader" class="fixed inset-0 z-[90] bg-slate-900/40 backdrop-blur-xs hidden items-center justify-center">
@@ -1934,7 +2000,11 @@
             calendarMode: 'month',
             calendarCursorDate: new Date(),
             realtimeChannel: null,
-            confirmCallback: null
+            confirmCallback: null,
+            floatingPopupQueue: [],
+            floatingPopupIndex: 0,
+            dismissedPopupIds: new Set(),
+            initialPopupShown: false
         };
 
         const ROLE_LABELS = {
@@ -2162,6 +2232,9 @@
                 updateUserSidebarAndPermissionsUI();
                 showAppShell();
                 navigateToView(AppState.currentView || 'dashboard');
+
+                // 5. Hiển thị Popup nổi các thông báo chưa đọc trên màn hình điện thoại / Web App
+                checkAndShowUnreadAnnouncementsFloatingPopup(true);
 
                 // Khởi tạo lời chào AI nếu khung chat đang trống
                 initAiWelcomeMessage();
@@ -4741,8 +4814,7 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
                             if (payload?.new) {
                                 AppState.notifications.unshift(payload.new);
                                 renderNotificationBell();
-                                showToast('🔔 ' + (payload.new.title || 'Bạn có thông báo mới!'), 'info');
-                                // V2 (Tính năng 1): Đẩy thông báo hệ thống qua Service Worker / Web Notification API nếu người dùng đã bật
+                                // Đẩy thông báo hệ thống qua Service Worker / Web Notification API
                                 triggerNativeWebPushNotification(
                                     payload.new.title || 'Cổng Điều Hành THPT Chi Lăng',
                                     payload.new.message || 'Bạn có thông báo điều hành mới.',
@@ -4750,6 +4822,8 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
                                     payload.new.reference_id
                                 );
                                 await refreshAllData(false);
+                                // Hiển thị Popup nổi trực tiếp trên màn hình điện thoại / Web App
+                                handleRealtimeNotificationFloatingPopup(payload.new);
                             }
                         }
                     )
@@ -4760,8 +4834,22 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
                             schema: 'public',
                             table: 'announcements'
                         },
-                        async () => {
+                        async (payload) => {
                             await refreshAllData(false);
+                            if (payload?.eventType === 'INSERT' && payload?.new?.is_published) {
+                                if (payload.new.sender_id !== AppState.user?.id) {
+                                    enqueueAndShowFloatingPopup({
+                                        id: 'ann-' + payload.new.id,
+                                        kind: 'announcement',
+                                        refId: payload.new.id,
+                                        title: payload.new.title || 'Thông báo mới',
+                                        summary: payload.new.summary || payload.new.content || 'Bạn có thông báo điều hành mới từ nhà trường.',
+                                        priority: payload.new.priority || 'normal',
+                                        meta: `${getUserFullName(payload.new.sender_id)} • ${getDepartmentName(payload.new.department_id)}`,
+                                        deadline: payload.new.deadline || null
+                                    }, true);
+                                }
+                            }
                         }
                     )
                     .on(
@@ -5160,6 +5248,19 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
             try {
                 // Đăng ký file ./sw.js thực tế trên cùng domain GitHub Pages (Bắt buộc để Chrome Android cho phép "Cài đặt ứng dụng" / WebAPK)
                 AppState.swRegistration = await navigator.serviceWorker.register('./sw.js', { scope: './' });
+
+                // Lắng nghe sự kiện khi người dùng chạm vào Popup thông báo trên thanh trạng thái điện thoại
+                navigator.serviceWorker.addEventListener('message', (event) => {
+                    const msg = event.data;
+                    if (msg && msg.type === 'OPEN_NOTIFICATION_TARGET') {
+                        if (msg.targetType === 'announcement' && msg.refId) {
+                            navigateToView('announcements');
+                            openAnnouncementDetailModal(msg.refId);
+                        } else if (msg.targetType === 'task') {
+                            navigateToView('tasks');
+                        }
+                    }
+                });
             } catch (err) {
                 console.warn('Service worker ./sw.js registration fallback:', err);
                 try {
@@ -5304,20 +5405,25 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
             if (Notification.permission !== 'granted') return;
             if (localStorage.getItem('chilang_web_push_enabled') === 'false') return;
 
-            const iconUrl = AppState.schoolSettings?.school_logo || 'https://ui-avatars.com/api/?name=CL&background=1e40af&color=fff&size=128&bold=true';
+            const iconUrl = './Logocl.png';
+            const badgeUrl = './icon-192.png';
+            const tagId = 'chilang-' + (refId || Date.now());
             try {
                 if (AppState.swRegistration && AppState.swRegistration.showNotification) {
                     AppState.swRegistration.showNotification(title, {
                         body,
                         icon: iconUrl,
-                        badge: iconUrl,
-                        tag: 'chilang-' + (refId || Date.now())
+                        badge: badgeUrl,
+                        vibrate: [200, 100, 200],
+                        renotify: true,
+                        tag: tagId,
+                        data: { type, refId }
                     });
                 } else {
                     const n = new Notification(title, {
                         body,
                         icon: iconUrl,
-                        tag: 'chilang-' + (refId || Date.now())
+                        tag: tagId
                     });
                     n.onclick = () => {
                         window.focus();
@@ -5336,20 +5442,27 @@ Không trả lời vượt quá dữ liệu được cung cấp.`;
         }
 
         function handleSendTestPushNotification() {
-            if (!('Notification' in window)) {
-                showToast('Trình duyệt không hỗ trợ Notification API.', 'error');
-                return;
-            }
-            if (Notification.permission !== 'granted') {
+            enqueueAndShowFloatingPopup({
+                id: 'test-popup-' + Date.now(),
+                kind: 'announcement',
+                refId: AppState.announcements[0]?.id || null,
+                title: '[THỬ NGHIỆM] Thông báo khẩn từ Ban Giám Hiệu',
+                summary: 'Popup nổi hoạt động tốt! Khi có thông báo mới, màn hình điện thoại sẽ hiển thị thẻ popup nổi kèm âm báo và rung như thế này.',
+                priority: 'urgent',
+                meta: 'Ban Giám Hiệu • Trường THPT Chi Lăng',
+                deadline: new Date(Date.now() + 24 * 3600 * 1000).toISOString()
+            }, true);
+
+            if ('Notification' in window && Notification.permission === 'granted') {
+                localStorage.setItem('chilang_web_push_enabled', 'true');
+                triggerNativeWebPushNotification(
+                    '🔔 [THỬ NGHIỆM] Cổng Điều Hành THPT Chi Lăng',
+                    'Thông báo đẩy hoạt động tốt! Khi có thông báo khẩn của BGH, màn hình thiết bị sẽ hiển thị như thế này.'
+                );
+            } else if ('Notification' in window && Notification.permission === 'default') {
                 handleEnableWebPushNotifications();
-                return;
             }
-            localStorage.setItem('chilang_web_push_enabled', 'true');
-            triggerNativeWebPushNotification(
-                '🔔 [THỬ NGHIỆM] Cổng Điều Hành THPT Chi Lăng',
-                'Thông báo đẩy hoạt động tốt! Khi có thông báo khẩn của BGH, màn hình thiết bị sẽ hiển thị như thế này.'
-            );
-            showToast('Đã gửi thông báo đẩy thử nghiệm lên màn hình thiết bị!', 'success');
+            showToast('Đã hiển thị Popup thông báo nổi thử nghiệm trên màn hình!', 'success');
         }
 
         // ---------------------------------------------------------------------
@@ -6155,19 +6268,41 @@ ${riskLines}
             if (directBox) directBox.classList.remove('hidden');
         });
 
-        window.addEventListener('appinstalled', () => {
+        window.addEventListener('appinstalled', async () => {
             deferredPwaInstallPrompt = null;
-            try { localStorage.setItem('chilang_pwa_installed', '1'); } catch (_) {}
+            try {
+                localStorage.setItem('chilang_pwa_installed', '1');
+                localStorage.setItem('chilang_web_push_enabled', 'true');
+            } catch (_) {}
             updateInstallAppButtonsVisibility();
             const directBox = document.getElementById('pwa-direct-install-box');
             if (directBox) directBox.classList.add('hidden');
             closeModal('modal-install-pwa-guide');
             showToast('Đã cài đặt Ứng dụng Cổng Điều Hành THPT Chi Lăng vào thiết bị!', 'success');
+
+            // Tự động xin quyền & kích hoạt thông báo Popup nổi khi cài App thành công
+            if ('Notification' in window && Notification.permission === 'default') {
+                try {
+                    const perm = await Notification.requestPermission();
+                    if (perm === 'granted') {
+                        triggerNativeWebPushNotification(
+                            '📲 Đã cài đặt Ứng dụng THPT Chi Lăng!',
+                            'Các tin thông báo mới từ nhà trường sẽ hiển thị dạng popup nổi trên màn hình điện thoại của Thầy/Cô.'
+                        );
+                    }
+                } catch (_) {}
+            }
+            if (AppState.user) {
+                checkAndShowUnreadAnnouncementsFloatingPopup(true);
+            }
         });
 
         try {
             window.matchMedia('(display-mode: standalone)').addEventListener('change', () => {
                 updateInstallAppButtonsVisibility();
+                if (AppState.user) {
+                    checkAndShowUnreadAnnouncementsFloatingPopup(true);
+                }
             });
         } catch (_) {}
 
@@ -6188,13 +6323,266 @@ ${riskLines}
                 deferredPwaInstallPrompt.prompt();
                 const { outcome } = await deferredPwaInstallPrompt.userChoice;
                 if (outcome === 'accepted') {
-                    try { localStorage.setItem('chilang_pwa_installed', '1'); } catch (_) {}
+                    try {
+                        localStorage.setItem('chilang_pwa_installed', '1');
+                        localStorage.setItem('chilang_web_push_enabled', 'true');
+                    } catch (_) {}
                     updateInstallAppButtonsVisibility();
                     closeModal('modal-install-pwa-guide');
+                    // Xin quyền hiển thị popup thông báo nổi trên điện thoại ngay khi người dùng bấm Cài đặt
+                    if ('Notification' in window && Notification.permission === 'default') {
+                        try { await Notification.requestPermission(); } catch (_) {}
+                    }
                 }
                 deferredPwaInstallPrompt = null;
             } catch (err) {
                 console.warn('PWA prompt error:', err);
+            }
+        }
+
+        // ---------------------------------------------------------------------
+        // POPUP NỔI THÔNG BÁO TRÊN MÀN HÌNH ĐIỆN THOẠI / WEB APP (HEADS-UP POPUP)
+        // ---------------------------------------------------------------------
+        function isMobileOrInstalledWebApp() {
+            if (isPwaAlreadyInstalled()) return true;
+            const ua = navigator.userAgent || '';
+            return /Android|iPhone|iPad|iPod|Mobile/i.test(ua) || window.innerWidth <= 1024;
+        }
+
+        function playFloatingPopupAlertSound() {
+            try {
+                if (navigator.vibrate) {
+                    navigator.vibrate([180, 80, 180]);
+                }
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                const ctx = new AudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+                osc.frequency.setValueAtTime(880, ctx.currentTime + 0.12); // A5
+                gain.gain.setValueAtTime(0.08, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.38);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.4);
+            } catch (_) {}
+        }
+
+        function checkAndShowUnreadAnnouncementsFloatingPopup(isInitialCheck = false) {
+            if (!AppState.user) return;
+            // Ưu tiên hiển thị trên điện thoại / máy tính bảng và khi chạy dưới dạng Web App đã cài đặt
+            if (!isMobileOrInstalledWebApp()) return;
+
+            const publishedAnns = AppState.announcements.filter(a => a.is_published);
+            const unreadAnns = publishedAnns.filter(a => !isAnnouncementReadByMe(a.id) && !AppState.dismissedPopupIds.has('ann-' + a.id));
+
+            if (unreadAnns.length === 0) return;
+
+            // Sắp xếp ưu tiên: Khẩn (urgent) -> Quan trọng (important) -> Mới nhất
+            const priorityWeight = { urgent: 3, important: 2, normal: 1 };
+            unreadAnns.sort((a, b) => {
+                const pa = priorityWeight[a.priority] || 1;
+                const pb = priorityWeight[b.priority] || 1;
+                if (pb !== pa) return pb - pa;
+                return new Date(b.publish_at || b.created_at).getTime() - new Date(a.publish_at || a.created_at).getTime();
+            });
+
+            AppState.floatingPopupQueue = unreadAnns.slice(0, 8).map(a => ({
+                id: 'ann-' + a.id,
+                kind: 'announcement',
+                refId: a.id,
+                title: a.title || 'Thông báo từ nhà trường',
+                summary: a.summary || a.content || '',
+                priority: a.priority || 'normal',
+                meta: `${getUserFullName(a.sender_id)} • ${getDepartmentName(a.department_id)}`,
+                deadline: a.deadline || null
+            }));
+
+            AppState.floatingPopupIndex = 0;
+            renderCurrentFloatingPopup(true);
+
+            // Nếu đang chạy ở chế độ Ứng dụng đã cài đặt (PWA) và đã cấp quyền Notification,
+            // đẩy thêm 1 banner thông báo nổi của hệ điều hành điện thoại cho tin quan trọng đầu tiên
+            if (isInitialCheck && !AppState.initialPopupShown && isPwaAlreadyInstalled()) {
+                AppState.initialPopupShown = true;
+                const topItem = AppState.floatingPopupQueue[0];
+                if (topItem && 'Notification' in window && Notification.permission === 'granted') {
+                    triggerNativeWebPushNotification(
+                        `🔔 ${topItem.priority === 'urgent' ? '[KHẨN] ' : ''}${topItem.title}`,
+                        topItem.summary || 'Chạm để xem chi tiết thông báo trên ứng dụng THPT Chi Lăng.',
+                        topItem.kind,
+                        topItem.refId
+                    );
+                }
+            }
+        }
+
+        function handleRealtimeNotificationFloatingPopup(notif) {
+            if (!notif) return;
+            let priority = 'normal';
+            let summary = notif.message || 'Bạn vừa nhận được thông báo điều hành mới.';
+            let meta = 'Thông báo tức thì • THPT Chi Lăng';
+            let deadline = null;
+
+            if (notif.type === 'announcement' && notif.reference_id) {
+                const ann = AppState.announcements.find(a => a.id === notif.reference_id);
+                if (ann) {
+                    priority = ann.priority || 'normal';
+                    summary = ann.summary || ann.content || summary;
+                    meta = `${getUserFullName(ann.sender_id)} • ${getDepartmentName(ann.department_id)}`;
+                    deadline = ann.deadline || null;
+                }
+            }
+
+            enqueueAndShowFloatingPopup({
+                id: 'notif-' + notif.id,
+                kind: notif.type || 'announcement',
+                refId: notif.reference_id || null,
+                title: notif.title || 'Thông báo điều hành mới',
+                summary,
+                priority,
+                meta,
+                deadline
+            }, true);
+        }
+
+        function enqueueAndShowFloatingPopup(item, playAlert = true) {
+            if (!item) return;
+            // Tránh trùng lặp trong hàng đợi
+            const existsIdx = AppState.floatingPopupQueue.findIndex(x => x.id === item.id || (item.refId && x.refId === item.refId));
+            if (existsIdx !== -1) {
+                AppState.floatingPopupQueue[existsIdx] = item;
+                AppState.floatingPopupIndex = existsIdx;
+            } else {
+                AppState.floatingPopupQueue.unshift(item);
+                AppState.floatingPopupIndex = 0;
+            }
+            renderCurrentFloatingPopup(playAlert);
+        }
+
+        function renderCurrentFloatingPopup(playAlert = false) {
+            const container = document.getElementById('floating-announcement-popup');
+            const card = document.getElementById('floating-popup-card');
+            const header = document.getElementById('floating-popup-header');
+            const badge = document.getElementById('floating-popup-badge');
+            const counter = document.getElementById('floating-popup-counter');
+            const titleEl = document.getElementById('floating-popup-title');
+            const summaryEl = document.getElementById('floating-popup-summary');
+            const metaEl = document.getElementById('floating-popup-meta');
+            const deadlineEl = document.getElementById('floating-popup-deadline');
+            const nextBtn = document.getElementById('floating-popup-next-btn');
+            const osPushBox = document.getElementById('floating-popup-enable-os-push');
+
+            if (!container || AppState.floatingPopupQueue.length === 0) {
+                if (container) container.classList.add('hidden');
+                return;
+            }
+
+            if (AppState.floatingPopupIndex >= AppState.floatingPopupQueue.length) {
+                AppState.floatingPopupIndex = 0;
+            }
+
+            const item = AppState.floatingPopupQueue[AppState.floatingPopupIndex];
+            const total = AppState.floatingPopupQueue.length;
+
+            // Tùy biến màu sắc theo mức độ Khẩn / Quan trọng / Thông thường
+            if (item.priority === 'urgent') {
+                card.className = 'animate-floating-popup bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border-2 border-red-600 overflow-hidden';
+                header.className = 'px-4 py-2.5 bg-gradient-to-r from-red-700 to-rose-700 text-white flex items-center justify-between gap-2';
+                badge.textContent = '🚨 TIN KHẨN';
+            } else if (item.priority === 'important') {
+                card.className = 'animate-floating-popup bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border-2 border-amber-500 overflow-hidden';
+                header.className = 'px-4 py-2.5 bg-gradient-to-r from-amber-600 to-orange-600 text-white flex items-center justify-between gap-2';
+                badge.textContent = '⭐ QUAN TRỌNG';
+            } else {
+                card.className = 'animate-floating-popup bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border-2 border-blue-600 overflow-hidden';
+                header.className = 'px-4 py-2.5 bg-gradient-to-r from-blue-800 to-indigo-800 text-white flex items-center justify-between gap-2';
+                badge.textContent = '🔔 THÔNG BÁO MỚI';
+            }
+
+            counter.textContent = total > 1 ? `(${AppState.floatingPopupIndex + 1}/${total} tin chưa đọc)` : 'Chưa đọc';
+            titleEl.textContent = item.title || 'Thông báo';
+            summaryEl.textContent = item.summary || 'Chạm "Xem ngay" để đọc toàn bộ nội dung chỉ đạo.';
+            metaEl.innerHTML = `<i class="fa-regular fa-building mr-1 text-blue-600"></i>${escapeHtml(item.meta || 'THPT Chi Lăng')}`;
+
+            if (item.deadline) {
+                deadlineEl.textContent = `⏰ Hạn: ${formatDateTimeVN(item.deadline)}`;
+                deadlineEl.classList.remove('hidden');
+            } else {
+                deadlineEl.classList.add('hidden');
+            }
+
+            if (nextBtn) {
+                nextBtn.classList.toggle('hidden', total <= 1);
+            }
+
+            // Hiển thị nút bật quyền thông báo hệ thống nếu trên điện thoại / Web App mà chưa cấp quyền Notification
+            if (osPushBox) {
+                const needOsPermission = ('Notification' in window) && Notification.permission === 'default';
+                osPushBox.classList.toggle('hidden', !needOsPermission);
+            }
+
+            container.classList.remove('hidden');
+
+            // Kích hoạt lại hiệu ứng trượt xuống mượt mà
+            card.classList.remove('animate-floating-popup');
+            void card.offsetWidth;
+            card.classList.add('animate-floating-popup');
+
+            if (playAlert) {
+                playFloatingPopupAlertSound();
+            }
+        }
+
+        function nextFloatingAnnouncementPopup() {
+            if (AppState.floatingPopupQueue.length <= 1) return;
+            AppState.floatingPopupIndex = (AppState.floatingPopupIndex + 1) % AppState.floatingPopupQueue.length;
+            renderCurrentFloatingPopup(false);
+        }
+
+        function dismissFloatingAnnouncementPopup() {
+            const container = document.getElementById('floating-announcement-popup');
+            if (container) container.classList.add('hidden');
+            AppState.floatingPopupQueue.forEach(item => {
+                if (item.id) AppState.dismissedPopupIds.add(item.id);
+                if (item.refId) AppState.dismissedPopupIds.add('ann-' + item.refId);
+            });
+            AppState.floatingPopupQueue = [];
+            AppState.floatingPopupIndex = 0;
+        }
+
+        async function openCurrentFloatingPopupItem() {
+            if (AppState.floatingPopupQueue.length === 0) return;
+            const item = AppState.floatingPopupQueue[AppState.floatingPopupIndex];
+            if (!item) return;
+
+            if (item.id) AppState.dismissedPopupIds.add(item.id);
+            if (item.refId) AppState.dismissedPopupIds.add('ann-' + item.refId);
+
+            // Xóa tin vừa mở khỏi hàng đợi popup
+            AppState.floatingPopupQueue.splice(AppState.floatingPopupIndex, 1);
+
+            const container = document.getElementById('floating-announcement-popup');
+            if (container) container.classList.add('hidden');
+
+            if (item.kind === 'task') {
+                navigateToView('tasks');
+            } else if (item.refId) {
+                navigateToView('announcements');
+                await openAnnouncementDetailModal(item.refId);
+            } else {
+                navigateToView('announcements');
+            }
+        }
+
+        async function enableOsPushFromFloatingPopup() {
+            await handleEnableWebPushNotifications();
+            const osPushBox = document.getElementById('floating-popup-enable-os-push');
+            if (osPushBox && 'Notification' in window && Notification.permission === 'granted') {
+                osPushBox.classList.add('hidden');
             }
         }
 

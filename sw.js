@@ -4,8 +4,9 @@
 // "Cài đặt ứng dụng" (Install App / WebAPK) thay vì chỉ tạo lối tắt.
 // =============================================================================
 
-const CACHE_NAME = 'thpt-chilang-pwa-v3';
+const CACHE_NAME = 'thpt-chilang-pwa-v4';
 const DEFAULT_ICON = './Logocl.png';
+const BADGE_ICON = './icon-192.png';
 
 self.addEventListener('install', (event) => {
     self.skipWaiting();
@@ -63,15 +64,17 @@ self.addEventListener('fetch', (event) => {
     );
 });
 
-// Xử lý nhận Web Push Notifications
+// Xử lý nhận Web Push Notifications & Tin nhắn kích hoạt Popup hệ thống từ ứng dụng
 self.addEventListener('push', (event) => {
     let data = {
         title: 'Cổng Điều Hành THPT Chi Lăng',
-        body: 'Bạn có thông báo điều hành mới từ nhà trường.'
+        body: 'Bạn có thông báo điều hành mới từ nhà trường.',
+        type: 'announcement',
+        refId: null
     };
     try {
         if (event.data) {
-            data = event.data.json();
+            data = Object.assign(data, event.data.json());
         }
     } catch (_) {}
 
@@ -79,20 +82,32 @@ self.addEventListener('push', (event) => {
         self.registration.showNotification(data.title || 'THPT Chi Lăng', {
             body: data.body || '',
             icon: DEFAULT_ICON,
-            badge: DEFAULT_ICON,
+            badge: BADGE_ICON,
+            vibrate: [200, 100, 200],
+            renotify: true,
+            tag: 'chilang-push-' + (data.refId || Date.now()),
             data: data
         })
     );
 });
 
 self.addEventListener('notificationclick', (event) => {
+    const notifData = event.notification.data || {};
     event.notification.close();
     event.waitUntil(
         self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-            if (clientList.length > 0) {
-                return clientList[0].focus();
+            for (const client of clientList) {
+                if ('focus' in client) {
+                    client.focus();
+                    client.postMessage({
+                        type: 'OPEN_NOTIFICATION_TARGET',
+                        targetType: notifData.type || 'announcement',
+                        refId: notifData.refId || null
+                    });
+                    return;
+                }
             }
-            return self.clients.openWindow('./');
+            return self.clients.openWindow('./index.html');
         })
     );
 });
